@@ -6,19 +6,29 @@
 
 import { SEVERITY, BLOCK_ACTION, DNR } from '../common/constants.js';
 import { parsedTargets, targetToRegexFilter } from '../common/matching.js';
-import { isRuleActiveNow } from '../common/schedule.js';
+import { isScheduleActive } from '../common/schedule.js';
 import { getUsageToday, isQuotaExhausted } from '../common/storage.js';
 
 /**
  * Comportement effectif d'une règle à cet instant : 'friction', 'block',
- * 'quota' (= bloquant, quota épuisé) ou null (rien à intercepter).
+ * 'quota' (= bloquant, quota épuisé), 'offhours' (= bloquant, hors fenêtre de
+ * disponibilité d'une règle quota) ou null (rien à intercepter).
+ *
+ * Sémantique des horaires selon la sévérité :
+ * - friction/blocage : la plage est une fenêtre d'APPLICATION — la contrainte
+ *   ne s'exerce que dedans, en dehors le site est libre.
+ * - quota : la plage est une fenêtre de DISPONIBILITÉ — le site est fermé en
+ *   dehors, et le quota se décompte dedans.
  */
 export function effectiveMode(rule, usageToday, now = new Date()) {
-  if (!isRuleActiveNow(rule, now)) return null;
+  if (rule.enabled === false) return null;
+  const inWindow = isScheduleActive(rule.schedule ?? null, now);
   switch (rule.severity) {
-    case SEVERITY.FRICTION: return 'friction';
-    case SEVERITY.BLOCK: return 'block';
-    case SEVERITY.QUOTA: return isQuotaExhausted(rule, usageToday) ? 'quota' : null;
+    case SEVERITY.FRICTION: return inWindow ? 'friction' : null;
+    case SEVERITY.BLOCK: return inWindow ? 'block' : null;
+    case SEVERITY.QUOTA:
+      if (!inWindow) return 'offhours';
+      return isQuotaExhausted(rule, usageToday) ? 'quota' : null;
     default: return null; // observe
   }
 }

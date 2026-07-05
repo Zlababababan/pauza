@@ -46,6 +46,22 @@ export function isRuleActiveNow(rule, date = new Date()) {
 }
 
 /**
+ * Prochain instant où le schedule redevient actif (réouverture d'une fenêtre
+ * de disponibilité). Balayage minute par minute, borné à 8 jours ; null si
+ * aucune réouverture (schedule vide de jours, par exemple).
+ */
+export function nextActiveTime(schedule, from = new Date()) {
+  if (!schedule || isScheduleActive(schedule, from)) return null;
+  const d = new Date(from);
+  d.setSeconds(0, 0);
+  for (let i = 0; i < 8 * 24 * 60; i++) {
+    d.setMinutes(d.getMinutes() + 1);
+    if (isScheduleActive(schedule, d)) return new Date(d);
+  }
+  return null;
+}
+
+/**
  * Prochain instant où l'état actif/inactif d'une des règles peut basculer :
  * minuit (remise à zéro des quotas) ou une borne d'horaire dans les 7 jours.
  * Retourne un timestamp (ms), toujours > date.

@@ -12,7 +12,7 @@ import { isAllowed } from './allowances.js';
 
 // Préséance quand plusieurs règles matchent : la plus stricte gagne
 // (même hiérarchie que les priorités DNR).
-const MODE_RANK = { friction: 1, quota: 2, block: 3 };
+const MODE_RANK = { friction: 1, quota: 2, offhours: 3, block: 4 };
 
 // État par onglet : cibles actuellement matchées, pour ne compter "observer"
 // qu'à l'entrée. En mémoire : perdu si le service worker redémarre, ce qui

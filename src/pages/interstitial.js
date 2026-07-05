@@ -5,6 +5,7 @@
 
 import { MSG, DEFAULTS } from '../common/constants.js';
 import { getRule } from '../common/storage.js';
+import { nextActiveTime } from '../common/schedule.js';
 
 function parseParams() {
   const href = location.href;
@@ -35,12 +36,44 @@ async function closeTab() {
   if (tab?.id != null) chrome.tabs.remove(tab.id);
 }
 
+// « Reprendre où j'en étais » : le retour arrière peut ramener sur une page
+// elle-même bloquée (rebond immédiat vers un nouvel interstitiel) ou ne mener
+// nulle part. Dans les deux cas : repli vers un onglet vierge.
+const LEAVE_FLAG = 'decroche-leaving';
+
+async function goNeutral() {
+  const tab = await chrome.tabs.getCurrent();
+  if (tab?.id == null) return;
+  try {
+    await chrome.tabs.update(tab.id, { url: 'chrome://newtab/' });
+  } catch {
+    await chrome.tabs.update(tab.id, { url: 'about:blank' });
+  }
+}
+
 function leave() {
-  if (history.length > 1) history.back();
-  else closeTab();
+  sessionStorage.setItem(LEAVE_FLAG, String(Date.now()));
+  if (history.length > 1) {
+    history.back();
+    // Toujours là après 500 ms (retour inefficace) -> onglet vierge.
+    setTimeout(goNeutral, 500);
+  } else {
+    goNeutral();
+  }
+}
+
+/** Rebond détecté : on sortait d'un interstitiel et en voilà déjà un autre. */
+function detectBounce() {
+  const at = Number(sessionStorage.getItem(LEAVE_FLAG) ?? 0);
+  sessionStorage.removeItem(LEAVE_FLAG);
+  return at && Date.now() - at < 3000;
 }
 
 async function init() {
+  if (detectBounce()) {
+    goNeutral();
+    return;
+  }
   const rule = await getRule(ruleId);
   const host = displayHost(url);
   const ruleName = rule?.name ? ` (règle « ${rule.name} »)` : '';
@@ -50,9 +83,26 @@ async function init() {
   $('badge').textContent =
     mode === 'block' ? 'Site en pause'
     : mode === 'quota' ? 'Quota du jour atteint'
+    : mode === 'offhours' ? 'Hors plage de disponibilité'
     : 'Moment de friction';
 
-  if (mode === 'quota') {
+  if (mode === 'offhours') {
+    $('title').textContent = 'Ce n\'est pas le moment.';
+    const p = $('subtitle');
+    p.append('Tu as choisi de rendre ');
+    const b = document.createElement('strong');
+    b.textContent = host;
+    p.append(b, `${ruleName} disponible seulement à certains moments.`);
+    const reopen = nextActiveTime(rule?.schedule ?? null);
+    if (reopen) {
+      p.append(' Réouverture : ' + reopen.toLocaleString('fr-FR', {
+        weekday: 'long', hour: '2-digit', minute: '2-digit',
+      }) + '.');
+    }
+    $('btn-leave').textContent = 'Reprendre où j\'en étais';
+    $('btn-close').hidden = false;
+    $('note').textContent = 'La plage se règle dans les options, à tête reposée.';
+  } else if (mode === 'quota') {
     $('title').textContent = 'C\'est tout pour aujourd\'hui.';
     const p = $('subtitle');
     const quota = rule?.quotaMinutes;

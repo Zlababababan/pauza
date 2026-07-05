@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseHM, isScheduleActive, isRuleActiveNow, nextEngineBoundary } from '../src/common/schedule.js';
+import { parseHM, isScheduleActive, isRuleActiveNow, nextEngineBoundary, nextActiveTime } from '../src/common/schedule.js';
 
 // mercredi 8 juillet 2026 (getDay() = 3)
 const at = (h, m = 0, dayOffset = 0) => new Date(2026, 6, 8 + dayOffset, h, m);
@@ -55,6 +55,19 @@ test('isRuleActiveNow : enabled et horaires combinés', () => {
   assert.ok(!isRuleActiveNow(rule, at(20)));
   assert.ok(!isRuleActiveNow({ ...rule, enabled: false }, at(10)));
   assert.ok(isRuleActiveNow({ enabled: true, schedule: null }, at(20)));
+});
+
+test('nextActiveTime : prochaine réouverture d\'une fenêtre', () => {
+  const s = { days: [1, 2, 3, 4, 5], ranges: [{ from: '09:00', to: '18:00' }] };
+  // mercredi 20h -> jeudi 9h
+  assert.equal(nextActiveTime(s, at(20)).getTime(), at(9, 0, 1).getTime());
+  // vendredi 20h (offset +2) -> lundi 9h (offset +5)
+  assert.equal(nextActiveTime(s, at(20, 0, 2)).getTime(), at(9, 0, 5).getTime());
+  // déjà dans la fenêtre -> null
+  assert.equal(nextActiveTime(s, at(10)), null);
+  // schedule sans jours cochés du tout... days vide = tous les jours -> demain 9h
+  assert.equal(nextActiveTime({ ranges: [{ from: '09:00', to: '18:00' }] }, at(20)).getTime(),
+    at(9, 0, 1).getTime());
 });
 
 test('nextEngineBoundary : prochaine borne ou minuit', () => {
