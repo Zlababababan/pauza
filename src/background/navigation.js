@@ -29,7 +29,9 @@ async function handleNavigation({ tabId, frameId, url }) {
     return;
   }
   if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-    tabMatches.set(tabId, new Set());
+    // Nos propres pages (interstitiel, closer) sont un détour dans la même
+    // visite : on préserve l'état pour ne pas recompter l'entrée au retour.
+    if (!url.startsWith(chrome.runtime.getURL(''))) tabMatches.set(tabId, new Set());
     return;
   }
 
