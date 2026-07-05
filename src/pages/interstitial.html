@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Un instant</title>
+  <link rel="stylesheet" href="interstitial.css">
+</head>
+<body>
+  <main class="card" hidden>
+    <div class="badge" id="badge"></div>
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+
+    <section id="friction-section" hidden>
+      <label class="intent-label" for="intent">Qu'est-ce que tu viens y faire&nbsp;?</label>
+      <textarea id="intent" rows="2"
+        placeholder="Facultatif — juste pour toi, rien n'est enregistré."></textarea>
+    </section>
+
+    <div class="actions">
+      <button id="btn-leave" class="primary">Ne pas y aller</button>
+      <button id="btn-continue" class="secondary" hidden disabled></button>
+      <button id="btn-close" class="primary" hidden>Fermer l'onglet</button>
+    </div>
+
+    <p class="note" id="note"></p>
+  </main>
+  <script type="module" src="interstitial.js"></script>
+</body>
+</html>

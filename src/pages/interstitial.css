@@ -1,0 +1,120 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f4f4f2;
+  --card: #ffffff;
+  --text: #2b2b2b;
+  --muted: #6b6b6b;
+  --accent: #3d6b5c;
+  --accent-text: #ffffff;
+  --border: #dcdcd8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191b1a;
+    --card: #232624;
+    --text: #e8e8e5;
+    --muted: #9a9a95;
+    --accent: #5d9682;
+    --accent-text: #10201a;
+    --border: #373b39;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  padding: 24px;
+}
+
+.card {
+  width: min(440px, 100%);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+p { margin: 0 0 8px; color: var(--muted); }
+p strong { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+
+.intent-label {
+  display: block;
+  margin: 20px 0 6px;
+  font-size: 14px;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+}
+textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+button {
+  font: inherit;
+  font-size: 15px;
+  padding: 11px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+button.primary:hover { filter: brightness(1.08); }
+
+button.secondary {
+  background: transparent;
+  color: var(--muted);
+}
+button.secondary:not(:disabled):hover { color: var(--text); border-color: var(--muted); }
+button.secondary:disabled { opacity: 0.55; cursor: default; }
+
+.note {
+  margin: 16px 0 0;
+  font-size: 13px;
+  text-align: center;
+}

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Onglet fermé</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      background: #f4f4f2; color: #6b6b6b;
+      font-family: system-ui, sans-serif; font-size: 14px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #191b1a; color: #9a9a95; }
+    }
+  </style>
+</head>
+<body>
+  <p>Cet onglet va se fermer.</p>
+  <script type="module" src="closer.js"></script>
+</body>
+</html>
