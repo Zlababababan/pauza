@@ -5,8 +5,14 @@
 
 import { SEVERITY, BLOCK_ACTION } from '../common/constants.js';
 import { parsedTargets, urlMatchesTarget, targetKey } from '../common/matching.js';
-import { getRules, recordStat } from '../common/storage.js';
+import { isRuleActiveNow } from '../common/schedule.js';
+import { getRules, recordStat, getUsageToday } from '../common/storage.js';
+import { effectiveMode } from './dnr.js';
 import { isAllowed } from './allowances.js';
+
+// Préséance quand plusieurs règles matchent : la plus stricte gagne
+// (même hiérarchie que les priorités DNR).
+const MODE_RANK = { friction: 1, quota: 2, block: 3 };
 
 // État par onglet : cibles actuellement matchées, pour ne compter "observer"
 // qu'à l'entrée. En mémoire : perdu si le service worker redémarre, ce qui
@@ -36,9 +42,12 @@ async function handleNavigation({ tabId, frameId, url }) {
   }
 
   const rules = await getRules();
+  const usageToday = await getUsageToday();
+  const now = new Date();
   const previous = tabMatches.get(tabId) ?? new Set();
   const current = new Set();
   let enforce = null;
+  let enforceMode = null;
 
   for (const rule of rules) {
     if (rule.enabled === false) continue;
@@ -46,31 +55,29 @@ async function handleNavigation({ tabId, frameId, url }) {
       if (!urlMatchesTarget(u, target)) continue;
       const key = `${rule.id}|${targetKey(target)}`;
       current.add(key);
-      if (rule.severity === SEVERITY.OBSERVE && !previous.has(key)) {
+      if (rule.severity === SEVERITY.OBSERVE && isRuleActiveNow(rule, now) && !previous.has(key)) {
         recordStat(rule.id, 'observed');
       }
-      if (rule.severity === SEVERITY.FRICTION || rule.severity === SEVERITY.BLOCK) {
-        // La règle la plus stricte gagne : un blocage prime sur une friction.
-        if (!enforce || (enforce.severity !== SEVERITY.BLOCK && rule.severity === SEVERITY.BLOCK)) {
-          enforce = rule;
-        }
+      const mode = effectiveMode(rule, usageToday, now);
+      if (mode && (!enforceMode || MODE_RANK[mode] > MODE_RANK[enforceMode])) {
+        enforce = rule;
+        enforceMode = mode;
       }
     }
   }
   tabMatches.set(tabId, current);
 
   if (!enforce) return;
-  // Une allowance n'outrepasse qu'une friction, jamais un blocage.
-  if (enforce.severity === SEVERITY.FRICTION && (await isAllowed(u))) return;
+  // Une allowance n'outrepasse qu'une friction, jamais un blocage ou un quota épuisé.
+  if (enforceMode === 'friction' && (await isAllowed(u))) return;
 
   // Navigation SPA/bfcache passée sous le radar du DNR : on applique la règle ici.
-  if (enforce.severity === SEVERITY.BLOCK && enforce.blockAction === BLOCK_ACTION.CLOSE_TAB) {
+  if (enforceMode !== 'friction' && enforce.blockAction === BLOCK_ACTION.CLOSE_TAB) {
     recordStat(enforce.id, 'blocked');
     chrome.tabs.remove(tabId).catch(() => {});
     return;
   }
-  const mode = enforce.severity === SEVERITY.BLOCK ? 'block' : 'friction';
   const dest = chrome.runtime.getURL('src/pages/interstitial.html') +
-    `?rid=${enforce.id}&mode=${mode}&u=` + encodeURIComponent(url);
+    `?rid=${enforce.id}&mode=${enforceMode}&u=` + encodeURIComponent(url);
   chrome.tabs.update(tabId, { url: dest }).catch(() => {});
 }

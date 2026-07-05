@@ -1,36 +1,52 @@
-// Service worker : câble le moteur DNR, le suivi de navigation, les allowances
-// et les messages des pages de l'extension.
+// Service worker : câble le moteur DNR, le suivi de navigation, les allowances,
+// le suivi du temps actif (quotas) et les messages des pages de l'extension.
 
 import { MSG } from '../common/constants.js';
 import { getRules, getRule, recordStat } from '../common/storage.js';
 import { matchingTarget, parseTarget } from '../common/matching.js';
+import { nextEngineBoundary } from '../common/schedule.js';
 import { rebuildDnrRules } from './dnr.js';
 import { grantAllowance, handleAllowanceAlarm, clearExpiredAllowances, pruneAllowances } from './allowances.js';
 import { initNavigation } from './navigation.js';
+import { initTracking, reevaluate, TICK_ALARM } from './tracking.js';
 
+const ENGINE_SYNC_ALARM = 'engine-sync';
+
+/**
+ * Met le moteur en phase avec l'état courant (règles, horaires, quotas) et
+ * programme le prochain point de bascule (borne horaire ou minuit).
+ */
 async function syncEngine() {
   const rules = await getRules();
   await rebuildDnrRules(rules);
   await clearExpiredAllowances();
   await pruneAllowances(rules);
+  chrome.alarms.create(ENGINE_SYNC_ALARM, { when: nextEngineBoundary(rules) });
 }
 
-chrome.runtime.onInstalled.addListener(syncEngine);
-chrome.runtime.onStartup.addListener(syncEngine);
+chrome.runtime.onInstalled.addListener(() => { syncEngine(); reevaluate(); });
+chrome.runtime.onStartup.addListener(() => { syncEngine(); reevaluate(); });
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.rules) {
-    const rules = changes.rules.newValue ?? [];
-    rebuildDnrRules(rules).catch((e) => console.error('rebuildDnrRules', e));
-    pruneAllowances(rules).catch((e) => console.error('pruneAllowances', e));
+    syncEngine().catch((e) => console.error('syncEngine', e));
+    reevaluate();
   }
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  handleAllowanceAlarm(alarm.name).catch((e) => console.error('allowance alarm', e));
+  if (alarm.name === ENGINE_SYNC_ALARM) {
+    syncEngine().catch((e) => console.error('syncEngine', e));
+    reevaluate();
+  } else if (alarm.name === TICK_ALARM) {
+    reevaluate();
+  } else {
+    handleAllowanceAlarm(alarm.name).catch((e) => console.error('allowance alarm', e));
+  }
 });
 
 initNavigation();
+initTracking(syncEngine);
 
 /**
  * Friction "continuer quand même" : accorde une allowance pour la cible de la
@@ -56,7 +72,7 @@ async function handleRequestAccess({ ruleId, url }) {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   switch (msg?.type) {
     case MSG.INTERSTITIAL_SHOWN:
-      recordStat(msg.ruleId, msg.mode === 'block' ? 'blocked' : 'frictionShown');
+      recordStat(msg.ruleId, msg.mode === 'friction' ? 'frictionShown' : 'blocked');
       sendResponse({ ok: true });
       return false;
     case MSG.BLOCKED_CLOSE:

@@ -26,8 +26,12 @@ export async function getStats() {
   return stats;
 }
 
-// Sérialise les écritures de stats pour éviter les pertes en lecture-modification-écriture.
-let statsQueue = Promise.resolve();
+// Sérialise les écritures pour éviter les pertes en lecture-modification-écriture.
+let writeQueue = Promise.resolve();
+function enqueue(fn) {
+  writeQueue = writeQueue.then(fn).catch((e) => console.error('storage write', e));
+  return writeQueue;
+}
 
 /**
  * Incrémente un compteur du jour pour une règle.
@@ -35,12 +39,38 @@ let statsQueue = Promise.resolve();
  * @param {'observed'|'frictionShown'|'continued'|'blocked'} field
  */
 export function recordStat(ruleId, field, n = 1) {
-  statsQueue = statsQueue.then(async () => {
+  return enqueue(async () => {
     const stats = await getStats();
     const day = (stats[todayKey()] ??= {});
     const entry = (day[ruleId] ??= { observed: 0, frictionShown: 0, continued: 0, blocked: 0 });
     entry[field] = (entry[field] ?? 0) + n;
     await chrome.storage.local.set({ stats });
-  }).catch((e) => console.error('recordStat', e));
-  return statsQueue;
+  });
+}
+
+// --- Temps actif consommé (quotas) : { "YYYY-MM-DD": { ruleId: secondes } } ---
+
+export async function getUsageToday() {
+  const { usage = {} } = await chrome.storage.local.get('usage');
+  return usage[todayKey()] ?? {};
+}
+
+/** Ajoute du temps actif (secondes) au compteur du jour d'une règle. */
+export function addUsage(ruleId, seconds) {
+  return enqueue(async () => {
+    const { usage = {} } = await chrome.storage.local.get('usage');
+    const day = (usage[todayKey()] ??= {});
+    day[ruleId] = (day[ruleId] ?? 0) + seconds;
+    // On ne garde que 7 jours d'usage (les stats agrégées viendront en M4).
+    for (const key of Object.keys(usage)) {
+      if (key < todayKey(new Date(Date.now() - 7 * 86_400_000))) delete usage[key];
+    }
+    await chrome.storage.local.set({ usage });
+  });
+}
+
+/** Le quota du jour de cette règle est-il épuisé ? */
+export function isQuotaExhausted(rule, usageToday) {
+  if (rule.severity !== 'quota' || !rule.quotaMinutes) return false;
+  return (usageToday[rule.id] ?? 0) >= rule.quotaMinutes * 60;
 }

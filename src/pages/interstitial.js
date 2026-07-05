@@ -47,9 +47,23 @@ async function init() {
 
   chrome.runtime.sendMessage({ type: MSG.INTERSTITIAL_SHOWN, ruleId, mode });
 
-  $('badge').textContent = mode === 'block' ? 'Site en pause' : 'Moment de friction';
+  $('badge').textContent =
+    mode === 'block' ? 'Site en pause'
+    : mode === 'quota' ? 'Quota du jour atteint'
+    : 'Moment de friction';
 
-  if (mode === 'block') {
+  if (mode === 'quota') {
+    $('title').textContent = 'C\'est tout pour aujourd\'hui.';
+    const p = $('subtitle');
+    const quota = rule?.quotaMinutes;
+    p.append(quota ? `Tu as utilisé tes ${quota} minutes sur ` : 'Tu as utilisé ton temps du jour sur ');
+    const b = document.createElement('strong');
+    b.textContent = host;
+    p.append(b, `${ruleName}. Le compteur repart à zéro demain — c'était le cadre que tu t'étais fixé.`);
+    $('btn-leave').textContent = 'Reprendre où j\'en étais';
+    $('btn-close').hidden = false;
+    $('note').textContent = 'Le quota se règle dans les options, à tête reposée.';
+  } else if (mode === 'block') {
     $('title').textContent = 'Ce site est en pause.';
     $('subtitle').innerHTML = '';
     const p = $('subtitle');
