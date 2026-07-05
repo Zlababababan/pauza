@@ -347,6 +347,54 @@ async function pollUrl(page, pred, timeout = 8000) {
       .catch(() => {});
     await pageQ.close().catch(() => {});
     await trigger.close().catch(() => {});
+
+    // --- Phase 4 : rejeu des deux bugs remontés après le test M2 ---
+
+    // Bug 1a : quota + plage = fenêtre de disponibilité. Hors plage -> fermé.
+    await worker.evaluate(async (rule) => {
+      const cur = (await chrome.storage.local.get('rules')).rules ?? [];
+      await chrome.storage.local.set({ rules: [...cur, rule] });
+    }, mkRule('quota-window', ['qwindow.test'], 'quota', {
+      quotaMinutes: 30,
+      schedule: { days: [(today + 3) % 7], ranges: [{ from: '09:00', to: '09:30' }] },
+    }));
+    await sleep(600);
+    const pageW = await browser.newPage();
+    await pageW.goto('http://qwindow.test/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    url = await pollUrl(pageW, (u) => u.includes('interstitial.html'));
+    const offhoursUi = await pageW.evaluate(() => ({
+      title: document.getElementById('title')?.textContent,
+      subtitle: document.getElementById('subtitle')?.textContent,
+    })).catch(() => ({}));
+    step(url.includes('mode=offhours') && url.includes('rid=quota-window'),
+      'Bug 1a : quota hors plage de disponibilité -> fermé (offhours)',
+      `${url.slice(0, 100)}… « ${offhoursUi.title} » ${offhoursUi.subtitle?.slice(-60)}`);
+    await pageW.close().catch(() => {});
+
+    // Bug 1b : « Reprendre où j'en étais » quand l'historique ramène sur une
+    // page elle-même bloquée -> repli onglet vierge au lieu du rebond infini.
+    const pageL = await browser.newPage();
+    await pageL.goto('http://blocked.test/premier', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await pollUrl(pageL, (u) => u.includes('interstitial.html'));
+    await pageL.goto('http://blocked.test/second', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await pollUrl(pageL, (u) => u.includes('interstitial.html'));
+    await pageL.click('#btn-leave'); // back -> interstitiel 1 -> rebond détecté -> vierge
+    await sleep(1500);
+    const leaveUrl = pageL.isClosed() ? '(onglet fermé)' : pageL.url();
+    step(pageL.isClosed() || !leaveUrl.includes('interstitial.html'),
+      'Bug 1b : reprendre avec historique bloqué -> repli onglet vierge, pas de rebond', leaveUrl);
+    await pageL.close().catch(() => {});
+
+    // Et sans historique du tout : le bouton mène aussi à un onglet vierge.
+    const pageL2 = await browser.newPage();
+    await pageL2.goto('http://blocked.test/direct', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await pollUrl(pageL2, (u) => u.includes('interstitial.html'));
+    await pageL2.click('#btn-leave');
+    await sleep(1200);
+    const leave2 = pageL2.isClosed() ? '(onglet fermé)' : pageL2.url();
+    step(pageL2.isClosed() || !leave2.includes('interstitial.html'),
+      'Bug 1b : reprendre sans historique -> onglet vierge', leave2);
+    await pageL2.close().catch(() => {});
   } finally {
     await browser.close();
     server.close();
