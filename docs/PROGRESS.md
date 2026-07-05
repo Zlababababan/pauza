@@ -6,9 +6,9 @@ notables sont consignées pour ne pas avoir à les re-déduire du code.
 ## État des milestones
 
 | Milestone | Contenu | État |
-|---|---|---|
+| --- | --- | --- |
 | M1 — Socle | Moteur de règles, blocage DNR, interstitiels friction/blocage, options | ✅ Livré, validé manuellement le 2026-07-05 |
-| M2 — Horaires et quotas | Plages horaires par règle, suivi du temps actif, quota/jour | 🚧 En cours |
+| M2 — Horaires et quotas | Plages horaires par règle, suivi du temps actif, quota/jour | ✅ Livré, en attente du test manuel |
 | M3 — Mode strict | Verrouillage des règles, délai 24 h, incognito guidé | ⬜ |
 | M4 — Stats et streaks | Tableau de bord, mode discret (flou + PIN) | ⬜ |
 | M5 — Finitions | Catégories prédéfinies, bouton panique, i18n FR/EN, icônes définitives | ⬜ |
@@ -44,6 +44,24 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
   données — contradictoire avec un produit anti-addiction et la promesse « 100 %
   local ». Voir la section monétisation ci-dessous.
 - M2 en cours : horaires + quotas.
+
+### 2026-07-05 — M2 livré (en attente du test manuel)
+
+- **Horaires** : `schedule = { days, ranges }` par règle, logique pure dans
+  `src/common/schedule.js` (plages nocturnes 22h→6h gérées, rattachées au jour du
+  début). Le DNR étant statique, une alarme `engine-sync` recompile aux bornes
+  (prochaine borne horaire ou minuit).
+- **Quotas** : temps actif = onglet actif + fenêtre au premier plan + non-idle
+  (60 s). Segments persistés en `storage.session` (survivent aux siestes du
+  service worker), tick 1/min pendant le suivi. Épuisement → recompilation DNR
+  puis balayage des onglets déjà ouverts vers l'interstitiel « quota » ; rappel
+  discret (~5 min avant, une fois/jour/règle) via notification.
+- UI : quota et horaires dans le formulaire d'options, temps restant dans le
+  popup, interstitiel mode quota.
+- Icônes générées (placeholder, définitives en M5) ; permissions `idle` et
+  `notifications` ajoutées.
+- Banc E2E : 26/26, dont horaires dans/hors plage, épuisement de quota en
+  conditions réelles et préséance blocage > allowance > friction.
 
 ## Monétisation — pistes retenues
 

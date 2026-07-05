@@ -57,6 +57,18 @@ for Testing via `@puppeteer/browsers`, Chromium) plutôt que le navigateur insta
 Plus généralement : quand un outil échoue *silencieusement*, suspecter d'abord une
 restriction de l'environnement, pas son propre code.
 
+## 2026-07-05 — Après un échec attendu, l'état observé est celui d'avant
+
+**Déclencheur :** dans un test E2E, une navigation volontairement en échec (DNS) laissait
+`page.url()` sur l'URL *précédente* ; l'assertion « pas de redirection » échouait à tort
+parce qu'elle lisait l'état du test d'avant. Autre variante le même jour : des `sed`
+successifs sur un script généré l'ont corrompu silencieusement — le symptôme (extension
+« qui ne charge pas ») pointait ailleurs.
+
+**Règle :** toute assertion qui suit un échec attendu doit partir d'un contexte frais
+(nouvelle page, nouveau processus, répertoire propre). Et ne pas éditer un fichier
+généré par `sed` successifs : le réécrire entièrement dès la deuxième retouche.
+
 ## 2026-07-05 — Un bug rapporté par l'utilisateur cache souvent deux causes
 
 **Déclencheur :** « le blocage ne fonctionne pas » avait deux causes indépendantes

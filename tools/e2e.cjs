@@ -27,6 +27,10 @@ function findChrome() {
 const CHROME = findChrome();
 const PORT = 8123;
 
+// Captures d'écran : hors du dépôt (surchargable via E2E_OUT).
+const OUT_DIR = process.env.E2E_OUT ?? path.join(os.tmpdir(), 'decroche-e2e-out');
+fs.mkdirSync(OUT_DIR, { recursive: true });
+
 const results = [];
 function step(ok, label, detail = '') {
   results.push({ ok, label, detail });
@@ -207,7 +211,7 @@ async function pollUrl(page, pred, timeout = 8000) {
     await sleep(300);
     const rows = await popup.$$eval('.rule-row', (els) => els.map((e) => e.textContent.trim()));
     step(rows.length === 4, 'Popup : une ligne d\'état par règle active', rows.join(' || '));
-    await popup.screenshot({ path: path.join(__dirname, 'popup.png') });
+    await popup.screenshot({ path: path.join(OUT_DIR, 'popup.png') });
 
     // Screenshot de l'interstitiel friction pour le rapport
     const shot = await browser.newPage();
@@ -215,7 +219,7 @@ async function pollUrl(page, pred, timeout = 8000) {
     await pollUrl(shot, (u) => u.includes('interstitial.html'));
     await sleep(400);
     await shot.setViewport({ width: 800, height: 600 });
-    await shot.screenshot({ path: path.join(__dirname, 'interstitial-block.png') });
+    await shot.screenshot({ path: path.join(OUT_DIR, 'interstitial-block.png') });
 
     const shot2 = await browser.newPage();
     await shot2.setViewport({ width: 800, height: 600 });
@@ -223,7 +227,7 @@ async function pollUrl(page, pred, timeout = 8000) {
     // allowance encore active -> forcer une friction : nouvelle cible
     await shot2.goto(`chrome-extension://${extId}/src/pages/interstitial.html?rid=spa-friction&mode=friction&u=http://127.0.0.1:${PORT}/spa/feed`);
     await sleep(600);
-    await shot2.screenshot({ path: path.join(__dirname, 'interstitial-friction.png') });
+    await shot2.screenshot({ path: path.join(OUT_DIR, 'interstitial-friction.png') });
     await shot.close().catch(() => {});
     await shot2.close().catch(() => {});
 
@@ -276,12 +280,80 @@ async function pollUrl(page, pred, timeout = 8000) {
       'Préséance : durcir en blocage révoque l\'allowance et bloque immédiatement',
       `url=${url} allowances=${JSON.stringify(pruned)}`);
     await pageH.close().catch(() => {});
+
+    // --- Phase 3 (M2) : horaires et quotas ---
+    const today = new Date().getDay();
+    await worker.evaluate(async (rules) => {
+      const cur = (await chrome.storage.local.get('rules')).rules ?? [];
+      await chrome.storage.local.set({ rules: [...cur, ...rules] });
+    }, [
+      mkRule('sched-on', ['sched-on.test'], 'block',
+        { schedule: { days: [today], ranges: [{ from: '00:00', to: '23:59' }] } }),
+      mkRule('sched-off', ['sched-off.test'], 'block',
+        { schedule: { days: [(today + 3) % 7], ranges: [{ from: '00:00', to: '23:59' }] } }),
+      mkRule('quota-rule', ['127.0.0.1/quota'], 'quota', { quotaMinutes: 0.05 }), // 3 s
+    ]);
+    await sleep(600);
+
+    // Horaires : règle dans sa plage -> bloque ; hors plage -> laisse passer
+    const pageS = await browser.newPage();
+    await pageS.goto('http://sched-on.test/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    url = await pollUrl(pageS, (u) => u.includes('interstitial.html'));
+    step(url.includes('mode=block') && url.includes('rid=sched-on'),
+      'Horaires : règle dans sa plage -> blocage appliqué', url);
+    await pageS.close().catch(() => {});
+    // Page fraîche : après un goto en échec DNS, page.url() garde l'URL précédente.
+    const pageOff = await browser.newPage();
+    const offResult = await pageOff.goto('http://sched-off.test/', { waitUntil: 'domcontentloaded' })
+      .then(() => 'loaded').catch((e) => e.message.split(' at ')[0]);
+    await sleep(500);
+    step(!pageOff.url().includes('interstitial'),
+      'Horaires : règle hors plage -> aucune interception', `${offResult} url=${pageOff.url()}`);
+    await pageOff.close().catch(() => {});
+
+    const syncAlarm = await worker.evaluate(() => chrome.alarms.get('engine-sync'));
+    step(!!syncAlarm, 'Horaires : alarme de borne programmée',
+      syncAlarm ? new Date(syncAlarm.scheduledTime).toISOString() : 'absente');
+
+    // Quota : accès libre, temps actif consommé, épuisement -> blocage + balayage
+    const pageQ = await browser.newPage();
+    await pageQ.goto(`http://127.0.0.1:${PORT}/quota/a`, { waitUntil: 'domcontentloaded' });
+    await pageQ.bringToFront();
+    step((await pageQ.title()) === 'LOCAL OK',
+      'Quota : accès libre tant que le quota n\'est pas épuisé', pageQ.url());
+    await sleep(4500); // consomme > 3 s de temps actif
+
+    // Un événement d'onglet referme le segment -> épuisement détecté
+    const trigger = await browser.newPage();
+    await sleep(1200);
+    url = await pollUrl(pageQ, (u) => u.includes('interstitial.html'));
+    step(url.includes('mode=quota') && url.includes('rid=quota-rule'),
+      'Quota : épuisement -> onglet ouvert balayé vers l\'interstitiel quota', url);
+
+    // Et le DNR bloque les nouvelles navigations
+    await pageQ.goto(`http://127.0.0.1:${PORT}/quota/b`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    url = await pollUrl(pageQ, (u) => u.includes('interstitial.html'));
+    step(url.includes('mode=quota'),
+      'Quota : nouvelle navigation bloquée par le DNR après épuisement', url);
+
+    const usage = await worker.evaluate(async () => {
+      const { usage = {} } = await chrome.storage.local.get('usage');
+      return Object.values(usage)[0] ?? {};
+    });
+    step((usage['quota-rule'] ?? 0) >= 3,
+      'Quota : temps actif réellement comptabilisé', `${(usage['quota-rule'] ?? 0).toFixed(1)} s`);
+
+    await pageQ.screenshot({ path: path.join(OUT_DIR, 'interstitial-quota.png') })
+      .catch(() => {});
+    await pageQ.close().catch(() => {});
+    await trigger.close().catch(() => {});
   } finally {
     await browser.close();
     server.close();
   }
 
   const fails = results.filter((r) => !r.ok);
-  console.log(`\n=== ${results.length - fails.length}/${results.length} OK ===`);
+  console.log(`\nCaptures : ${OUT_DIR}`);
+  console.log(`=== ${results.length - fails.length}/${results.length} OK ===`);
   process.exit(fails.length ? 1 : 0);
 })().catch((e) => { console.error('ERREUR', e); process.exit(2); });

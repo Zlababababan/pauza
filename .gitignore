@@ -5,3 +5,4 @@ Thumbs.db
 .claude/settings.local.json
 .chrome/
 package-lock.json
+tools/*.png
