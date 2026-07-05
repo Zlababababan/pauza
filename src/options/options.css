@@ -171,3 +171,18 @@ button.danger:hover { background: color-mix(in srgb, var(--danger) 10%, transpar
 
 .support { text-align: center; font-size: 13px; color: var(--muted); }
 .support a { color: var(--accent); }
+
+.header-row { display: flex; align-items: baseline; justify-content: space-between; }
+.lang {
+  font-size: 12px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 6px;
+}
+
+.strict-status { font-weight: 600; margin: 12px 0 10px; }
+.strict-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.hint.warn { color: var(--danger); }
+#incognito-open { margin-top: 4px; font-size: 13px; padding: 6px 12px; }

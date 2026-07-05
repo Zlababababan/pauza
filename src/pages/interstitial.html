@@ -13,15 +13,14 @@
     <p id="subtitle"></p>
 
     <section id="friction-section" hidden>
-      <label class="intent-label" for="intent">Qu'est-ce que tu viens y faire&nbsp;?</label>
-      <textarea id="intent" rows="2"
-        placeholder="Facultatif — juste pour toi, rien n'est enregistré."></textarea>
+      <label class="intent-label" for="intent" data-i18n="intent_label"></label>
+      <textarea id="intent" rows="2" data-i18n-placeholder="intent_placeholder"></textarea>
     </section>
 
     <div class="actions">
-      <button id="btn-leave" class="primary">Ne pas y aller</button>
+      <button id="btn-leave" class="primary"></button>
       <button id="btn-continue" class="secondary" hidden disabled></button>
-      <button id="btn-close" class="primary" hidden>Fermer l'onglet</button>
+      <button id="btn-close" class="primary" hidden data-i18n="btn_close_tab"></button>
     </div>
 
     <p class="note" id="note"></p>

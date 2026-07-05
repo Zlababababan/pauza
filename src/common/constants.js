@@ -34,7 +34,16 @@ export const DNR = {
 
 export const ALARM_ALLOWANCE_PREFIX = 'allowance:';
 
-// Lien de soutien (Ko-fi, GitHub Sponsors, Liberapay…). Tant qu'il vaut null,
-// aucun élément de don n'apparaît dans l'interface. L'extension reste gratuite :
-// ce lien est le seul mécanisme de monétisation embarqué.
-export const SUPPORT_URL = null;
+// Liens de soutien. Tant qu'une entrée vaut null, elle n'apparaît pas dans
+// l'interface. L'extension reste gratuite : ces liens sont le seul mécanisme
+// de monétisation embarqué.
+// kofi : page Ko-fi (ex. 'https://ko-fi.com/decroche')
+// paypal : lien PayPal.me (ex. 'https://paypal.me/pseudo')
+export const SUPPORT_LINKS = {
+  kofi: null,
+  paypal: null,
+};
+
+// Mode strict : délai imposé aux demandes de suppression/désarmement.
+export const STRICT_DELAY_MS = 24 * 3600 * 1000;
+export const ALARM_STRICT = 'strict-sync';

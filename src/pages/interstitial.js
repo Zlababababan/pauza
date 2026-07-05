@@ -1,11 +1,13 @@
-// Page intermédiaire : friction (délai + intention + continuer) ou blocage.
-// Paramètres : ?rid=<ruleId>&mode=friction|block&u=<url bloquée>
+// Page intermédiaire : friction (délai + intention + continuer), blocage,
+// quota épuisé ou hors plage de disponibilité.
+// Paramètres : ?rid=<ruleId>&mode=friction|block|quota|offhours&u=<url bloquée>
 // `u` est toujours le dernier paramètre : le DNR y injecte l'URL brute (non
 // encodée), le suivi SPA l'encode — on parse donc positionnellement.
 
 import { MSG, DEFAULTS } from '../common/constants.js';
 import { getRule } from '../common/storage.js';
 import { nextActiveTime } from '../common/schedule.js';
+import { initI18n, t, applyI18n, fillWithHost, dateLocale } from '../common/i18n.js';
 
 function parseParams() {
   const href = location.href;
@@ -24,7 +26,7 @@ function displayHost(url) {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
   } catch {
-    return 'ce site';
+    return t('this_site');
   }
 }
 
@@ -74,63 +76,40 @@ async function init() {
     goNeutral();
     return;
   }
+  await initI18n();
+  applyI18n();
   const rule = await getRule(ruleId);
   const host = displayHost(url);
-  const ruleName = rule?.name ? ` (règle « ${rule.name} »)` : '';
+  const ruleSuffix = rule?.name ? t('rule_suffix', { name: rule.name }) : '';
 
   chrome.runtime.sendMessage({ type: MSG.INTERSTITIAL_SHOWN, ruleId, mode });
 
-  $('badge').textContent =
-    mode === 'block' ? 'Site en pause'
-    : mode === 'quota' ? 'Quota du jour atteint'
-    : mode === 'offhours' ? 'Hors plage de disponibilité'
-    : 'Moment de friction';
+  const isBlocking = mode === 'block' || mode === 'quota' || mode === 'offhours';
+  $('badge').textContent = t(`badge_${isBlocking ? mode : 'friction'}`);
+  document.title = t(isBlocking ? `${mode}_title` : 'friction_title');
 
   if (mode === 'offhours') {
-    $('title').textContent = 'Ce n\'est pas le moment.';
-    const p = $('subtitle');
-    p.append('Tu as choisi de rendre ');
-    const b = document.createElement('strong');
-    b.textContent = host;
-    p.append(b, `${ruleName} disponible seulement à certains moments.`);
+    $('title').textContent = t('offhours_title');
+    fillWithHost($('subtitle'), 'offhours_sub', host, { rule: ruleSuffix });
     const reopen = nextActiveTime(rule?.schedule ?? null);
     if (reopen) {
-      p.append(' Réouverture : ' + reopen.toLocaleString('fr-FR', {
-        weekday: 'long', hour: '2-digit', minute: '2-digit',
-      }) + '.');
+      $('subtitle').append(t('offhours_reopen', {
+        when: reopen.toLocaleString(dateLocale(), { weekday: 'long', hour: '2-digit', minute: '2-digit' }),
+      }));
     }
-    $('btn-leave').textContent = 'Reprendre où j\'en étais';
-    $('btn-close').hidden = false;
-    $('note').textContent = 'La plage se règle dans les options, à tête reposée.';
+    $('note').textContent = t('note_offhours');
   } else if (mode === 'quota') {
-    $('title').textContent = 'C\'est tout pour aujourd\'hui.';
-    const p = $('subtitle');
-    const quota = rule?.quotaMinutes;
-    p.append(quota ? `Tu as utilisé tes ${quota} minutes sur ` : 'Tu as utilisé ton temps du jour sur ');
-    const b = document.createElement('strong');
-    b.textContent = host;
-    p.append(b, `${ruleName}. Le compteur repart à zéro demain — c'était le cadre que tu t'étais fixé.`);
-    $('btn-leave').textContent = 'Reprendre où j\'en étais';
-    $('btn-close').hidden = false;
-    $('note').textContent = 'Le quota se règle dans les options, à tête reposée.';
+    $('title').textContent = t('quota_title');
+    fillWithHost($('subtitle'), rule?.quotaMinutes ? 'quota_sub' : 'quota_sub_nomin', host,
+      { min: rule?.quotaMinutes, rule: ruleSuffix });
+    $('note').textContent = t('note_quota');
   } else if (mode === 'block') {
-    $('title').textContent = 'Ce site est en pause.';
-    $('subtitle').innerHTML = '';
-    const p = $('subtitle');
-    p.append('Tu as choisi de bloquer ');
-    const b = document.createElement('strong');
-    b.textContent = host;
-    p.append(b, `${ruleName}. Ce n'est pas un échec d'avoir atterri ici — le détour est déjà fait.`);
-    $('btn-leave').textContent = 'Reprendre où j\'en étais';
-    $('btn-close').hidden = false;
-    $('note').textContent = 'Tu peux ajuster cette règle dans les options, à tête reposée.';
+    $('title').textContent = t('block_title');
+    fillWithHost($('subtitle'), 'block_sub', host, { rule: ruleSuffix });
+    $('note').textContent = t('note_block');
   } else {
-    $('title').textContent = 'Un instant.';
-    const p = $('subtitle');
-    p.append('Tu t\'apprêtes à ouvrir ');
-    const b = document.createElement('strong');
-    b.textContent = host;
-    p.append(b, `${ruleName}.`);
+    $('title').textContent = t('friction_title');
+    fillWithHost($('subtitle'), 'friction_sub', host, { rule: ruleSuffix });
     $('friction-section').hidden = false;
 
     const delay = rule?.frictionDelaySec ?? DEFAULTS.frictionDelaySec;
@@ -141,11 +120,11 @@ async function init() {
     let remaining = delay;
     const tick = () => {
       if (remaining > 0) {
-        btn.textContent = `Continuer quand même (${remaining} s)`;
+        btn.textContent = t('btn_continue_wait', { s: remaining });
         remaining--;
         setTimeout(tick, 1000);
       } else {
-        btn.textContent = `Continuer quand même (${allowMin} min)`;
+        btn.textContent = t('btn_continue', { min: allowMin });
         btn.disabled = false;
       }
     };
@@ -157,10 +136,17 @@ async function init() {
       if (res?.ok) {
         location.replace(url);
       } else {
-        btn.textContent = 'Impossible d\'ouvrir — réessaie';
+        btn.textContent = t('btn_continue_error');
         btn.disabled = false;
       }
     });
+  }
+
+  if (isBlocking) {
+    $('btn-leave').textContent = t('btn_resume');
+    $('btn-close').hidden = false;
+  } else {
+    $('btn-leave').textContent = t('btn_dont_go');
   }
 
   $('btn-leave').addEventListener('click', leave);

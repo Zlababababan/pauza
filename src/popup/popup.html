@@ -11,14 +11,17 @@
     <span id="date"></span>
   </header>
 
+  <p id="strict-banner" class="strict-banner" hidden></p>
+
   <div id="today"></div>
-  <p class="empty" id="empty" hidden>
-    Aucune règle active. Commence par en ajouter une — même juste pour observer.
-  </p>
+  <p class="empty" id="empty" hidden data-i18n="popup_empty"></p>
 
   <footer>
-    <button id="open-options">Gérer mes règles</button>
-    <a id="support-link" class="support" target="_blank" rel="noopener" hidden>Soutenir Décroche ♥</a>
+    <button id="open-options" data-i18n="popup_manage"></button>
+    <div class="foot-row">
+      <span id="support-links" class="support" hidden></span>
+      <select id="lang-switcher" class="lang" title="Langue / Language"></select>
+    </div>
   </footer>
   <script type="module" src="popup.js"></script>
 </body>

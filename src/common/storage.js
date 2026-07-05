@@ -74,3 +74,15 @@ export function isQuotaExhausted(rule, usageToday) {
   if (rule.severity !== 'quota' || !rule.quotaMinutes) return false;
   return (usageToday[rule.id] ?? 0) >= rule.quotaMinutes * 60;
 }
+
+// --- Mode strict ---
+// { armed, until (ts|null = permanent), pendingDisarmAt (ts|null) }
+
+export async function getStrict() {
+  const { strict } = await chrome.storage.local.get('strict');
+  return strict ?? { armed: false, until: null, pendingDisarmAt: null };
+}
+
+export async function setStrict(strict) {
+  await chrome.storage.local.set({ strict });
+}

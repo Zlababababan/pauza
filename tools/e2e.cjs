@@ -163,6 +163,7 @@ async function pollUrl(page, pred, timeout = 8000) {
     const page2 = await browser.newPage();
     await page2.goto('http://blocked.test/x', { waitUntil: 'domcontentloaded' }).catch(() => {});
     url = await pollUrl(page2, (u) => u.includes('interstitial.html'));
+    await sleep(500); // init asynchrone de la page (i18n, règle)
     const blockUi = await page2.evaluate(() => ({
       mode: location.href.includes('mode=block'),
       continueHidden: document.getElementById('btn-continue').hidden,

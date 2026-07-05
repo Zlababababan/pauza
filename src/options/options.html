@@ -9,121 +9,125 @@
 <body>
   <main>
     <header>
-      <h1>Décroche</h1>
-      <p class="tagline">Choisis, site par site, le niveau d'accompagnement qui t'aide vraiment.</p>
+      <div class="header-row">
+        <h1>Décroche</h1>
+        <select id="lang-switcher" class="lang" title="Langue / Language"></select>
+      </div>
+      <p class="tagline" data-i18n="options_tagline"></p>
     </header>
 
     <section>
-      <h2>Ajouter une règle</h2>
+      <h2 data-i18n="options_add_title"></h2>
       <form id="add-form">
         <div class="field">
-          <label for="name">Nom <span class="optional">(facultatif)</span></label>
-          <input id="name" type="text" placeholder="Ex. : Réseaux sociaux">
+          <label for="name" data-i18n-html="options_name_label"></label>
+          <input id="name" type="text" data-i18n-placeholder="options_name_ph">
         </div>
 
         <div class="field">
-          <label for="targets">Sites ciblés <span class="hint">— un par ligne : domaine
-            (<code>tiktok.com</code>), wildcard (<code>*.tiktok.com</code>) ou section
-            (<code>youtube.com/shorts</code>)</span></label>
+          <label for="targets" data-i18n-html="options_targets_label"></label>
           <textarea id="targets" rows="3" required
             placeholder="tiktok.com&#10;youtube.com/shorts"></textarea>
           <p class="error" id="targets-error" hidden></p>
         </div>
 
         <fieldset class="field">
-          <legend>Sévérité</legend>
+          <legend data-i18n="options_severity_legend"></legend>
           <label class="radio">
             <input type="radio" name="severity" value="observe">
-            <span><strong>Observer</strong> — rien n'est bloqué, on compte simplement les visites.</span>
+            <span data-i18n-html="options_sev_observe"></span>
           </label>
           <label class="radio">
             <input type="radio" name="severity" value="friction" checked>
-            <span><strong>Friction</strong> — une pause de quelques secondes et une question avant d'entrer. Tu peux toujours continuer.</span>
+            <span data-i18n-html="options_sev_friction"></span>
           </label>
           <label class="radio">
             <input type="radio" name="severity" value="quota">
-            <span><strong>Quota</strong> — accès libre jusqu'à X minutes par jour de temps actif, puis blocage jusqu'au lendemain.</span>
+            <span data-i18n-html="options_sev_quota"></span>
           </label>
           <label class="radio">
             <input type="radio" name="severity" value="block">
-            <span><strong>Blocage</strong> — aucun accès.</span>
+            <span data-i18n-html="options_sev_block"></span>
           </label>
         </fieldset>
 
         <fieldset class="field sub" id="friction-options">
-          <legend>Réglages de la friction</legend>
+          <legend data-i18n="options_friction_legend"></legend>
           <div class="inline-fields">
-            <label>Délai avant de pouvoir continuer
+            <label><span data-i18n="options_friction_delay"></span>
               <span class="unit-field"><input id="friction-delay" type="number" min="3" max="120" value="10"> s</span>
             </label>
-            <label>Durée de l'accès après « continuer »
+            <label><span data-i18n="options_friction_allow"></span>
               <span class="unit-field"><input id="allow-duration" type="number" min="1" max="120" value="5"> min</span>
             </label>
           </div>
         </fieldset>
 
         <fieldset class="field sub" id="quota-options" hidden>
-          <legend>Réglage du quota</legend>
-          <label class="inline-label">Temps actif autorisé par jour
+          <legend data-i18n="options_quota_legend"></legend>
+          <label class="inline-label"><span data-i18n="options_quota_label"></span>
             <span class="unit-field"><input id="quota-minutes" type="number" min="1" max="600" value="30"> min</span>
           </label>
-          <p class="hint">Seul compte le temps où l'onglet est actif et la fenêtre au premier
-            plan. Un rappel discret arrive ~5 min avant la fin.</p>
+          <p class="hint" data-i18n="options_quota_hint"></p>
         </fieldset>
 
         <fieldset class="field sub" id="block-options" hidden>
-          <legend>Au moment du blocage</legend>
+          <legend data-i18n="options_block_legend"></legend>
           <label class="radio">
             <input type="radio" name="blockAction" value="interstitial" checked>
-            <span>Afficher une page de pause</span>
+            <span data-i18n="options_block_interstitial"></span>
           </label>
           <label class="radio">
             <input type="radio" name="blockAction" value="closeTab">
-            <span>Fermer l'onglet immédiatement</span>
+            <span data-i18n="options_block_closetab"></span>
           </label>
         </fieldset>
 
-        <fieldset class="field sub" id="schedule-options" hidden>
+        <fieldset class="field sub" id="schedule-options">
           <legend>
             <label class="radio">
               <input type="checkbox" id="schedule-enabled">
-              <span id="schedule-legend"><strong>Seulement à certains moments</strong> —
-                friction/blocage : appliqués dans la plage uniquement ;
-                quota : site disponible dans la plage uniquement.</span>
+              <span data-i18n-html="options_schedule_legend"></span>
             </label>
           </legend>
           <div id="schedule-fields" hidden>
-            <div class="days" id="schedule-days">
-              <!-- généré par options.js : L M M J V S D -->
-            </div>
+            <div class="days" id="schedule-days"></div>
             <div class="inline-fields">
-              <label>De
+              <label><span data-i18n="options_schedule_from"></span>
                 <span class="unit-field"><input id="schedule-from" type="time" value="09:00"></span>
               </label>
-              <label>À
+              <label><span data-i18n="options_schedule_to"></span>
                 <span class="unit-field"><input id="schedule-to" type="time" value="18:00"></span>
               </label>
             </div>
-            <p class="hint">Une fin avant le début (ex. 22:00 → 06:00) couvre la nuit.</p>
+            <p class="hint" data-i18n="options_schedule_hint"></p>
           </div>
         </fieldset>
 
-        <button type="submit" class="primary">Ajouter la règle</button>
+        <button type="submit" class="primary" data-i18n="options_submit"></button>
       </form>
     </section>
 
     <section>
-      <h2>Règles actives</h2>
+      <h2 data-i18n="options_rules_title"></h2>
       <div id="rules-list"></div>
-      <p class="empty" id="rules-empty" hidden>
-        Aucune règle pour l'instant. Ajoute un premier site ci-dessus — tu peux commencer
-        en douceur avec « Observer ».
-      </p>
+      <p class="empty" id="rules-empty" hidden data-i18n="options_rules_empty"></p>
+    </section>
+
+    <section id="strict-section">
+      <h2 data-i18n="strict_title"></h2>
+      <p class="hint" data-i18n="strict_desc"></p>
+      <p id="incognito-status" class="hint"></p>
+      <button id="incognito-open" data-i18n="strict_incognito_open" hidden></button>
+      <p id="strict-status" class="strict-status"></p>
+      <div class="strict-actions" id="strict-actions"></div>
     </section>
 
     <footer class="support" id="support" hidden>
-      <p>Décroche est gratuit et le restera. Si l'extension t'aide,
-        <a id="support-link" target="_blank" rel="noopener">tu peux soutenir son développement ☕</a>
+      <p><span data-i18n="support_line"></span>
+        <a id="support-kofi" target="_blank" rel="noopener" hidden></a>
+        <span id="support-sep" hidden> · </span>
+        <a id="support-paypal" target="_blank" rel="noopener" hidden></a>
       </p>
     </footer>
   </main>
