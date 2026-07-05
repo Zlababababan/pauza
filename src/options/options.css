@@ -88,6 +88,29 @@ fieldset.sub {
 .radio span { color: var(--muted); }
 .radio strong { color: var(--text); }
 
+.inline-label { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+.hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+
+.days { display: flex; gap: 6px; margin: 10px 0 14px; }
+.days label {
+  display: grid;
+  place-items: center;
+  width: 34px; height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--muted);
+  user-select: none;
+}
+.days input { display: none; }
+.days label:has(input:checked) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
 .inline-fields { display: flex; gap: 24px; flex-wrap: wrap; font-size: 14px; }
 .inline-fields label { display: flex; flex-direction: column; gap: 6px; }
 .unit-field { display: flex; align-items: center; gap: 6px; color: var(--muted); }

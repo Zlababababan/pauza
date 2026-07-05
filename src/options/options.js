@@ -23,13 +23,54 @@ function selectedSeverity() {
 function refreshSubOptions() {
   const sev = selectedSeverity();
   $('friction-options').hidden = sev !== SEVERITY.FRICTION;
-  $('block-options').hidden = sev !== SEVERITY.BLOCK;
+  $('quota-options').hidden = sev !== SEVERITY.QUOTA;
+  // Le choix d'action vaut pour le blocage ET le quota épuisé.
+  $('block-options').hidden = sev !== SEVERITY.BLOCK && sev !== SEVERITY.QUOTA;
+  $('schedule-options').hidden = false;
 }
 
 document.querySelectorAll('input[name="severity"]').forEach((r) =>
   r.addEventListener('change', refreshSubOptions)
 );
 refreshSubOptions();
+
+// --- Horaires ---
+
+const DAY_LABELS = ['D', 'L', 'M', 'M', 'J', 'V', 'S']; // index = getDay()
+
+for (const day of [1, 2, 3, 4, 5, 6, 0]) { // semaine d'abord, dimanche à la fin
+  const label = document.createElement('label');
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.value = String(day);
+  input.defaultChecked = day >= 1 && day <= 5; // L-V par défaut (survit au reset)
+  input.checked = input.defaultChecked;
+  label.append(input, DAY_LABELS[day]);
+  label.title = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'][day];
+  $('schedule-days').append(label);
+}
+
+$('schedule-enabled').addEventListener('change', () => {
+  $('schedule-fields').hidden = !$('schedule-enabled').checked;
+});
+
+function readSchedule() {
+  if (!$('schedule-enabled').checked) return null;
+  const days = [...$('schedule-days').querySelectorAll('input:checked')].map((i) => Number(i.value));
+  const from = $('schedule-from').value;
+  const to = $('schedule-to').value;
+  if (!from || !to || from === to) return null;
+  return { days, ranges: [{ from, to }] };
+}
+
+function scheduleSummary(schedule) {
+  if (!schedule?.ranges?.length) return null;
+  const days = schedule.days?.length
+    ? [1, 2, 3, 4, 5, 6, 0].filter((d) => schedule.days.includes(d)).map((d) => DAY_LABELS[d]).join('·')
+    : 'tous les jours';
+  const r = schedule.ranges[0];
+  return `${days} ${r.from}–${r.to}`;
+}
 
 $('add-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -52,13 +93,15 @@ $('add-form').addEventListener('submit', async (e) => {
     name: $('name').value.trim() || null,
     targets: lines,
     severity,
-    blockAction: severity === SEVERITY.BLOCK
+    blockAction: severity === SEVERITY.BLOCK || severity === SEVERITY.QUOTA
       ? document.querySelector('input[name="blockAction"]:checked').value
       : BLOCK_ACTION.INTERSTITIAL,
     frictionDelaySec: clampInt($('friction-delay').value, 3, 120, DEFAULTS.frictionDelaySec),
     allowDurationMin: clampInt($('allow-duration').value, 1, 120, DEFAULTS.allowDurationMin),
-    schedule: null,
-    quotaMinutes: null,
+    schedule: readSchedule(),
+    quotaMinutes: severity === SEVERITY.QUOTA
+      ? clampInt($('quota-minutes').value, 1, 600, 30)
+      : null,
     locked: false,
     enabled: true,
     createdAt: Date.now(),
@@ -68,6 +111,7 @@ $('add-form').addEventListener('submit', async (e) => {
   rules.push(rule);
   await saveRules(rules);
   e.target.reset();
+  $('schedule-fields').hidden = true;
   refreshSubOptions();
   render();
 });
@@ -105,11 +149,16 @@ function ruleCard(rule) {
   if (rule.severity === SEVERITY.FRICTION) {
     meta.push(`délai ${rule.frictionDelaySec} s`, `accès ${rule.allowDurationMin} min`);
   }
-  if (rule.severity === SEVERITY.BLOCK) {
+  if (rule.severity === SEVERITY.QUOTA) {
+    meta.push(`${rule.quotaMinutes} min/jour`);
+  }
+  if (rule.severity === SEVERITY.BLOCK || rule.severity === SEVERITY.QUOTA) {
     meta.push(rule.blockAction === BLOCK_ACTION.CLOSE_TAB
       ? 'fermeture de l\'onglet'
       : 'page de pause');
   }
+  const sched = scheduleSummary(rule.schedule);
+  if (sched) meta.push(sched);
   if (meta.length) {
     const metaEl = document.createElement('p');
     metaEl.className = 'rule-meta';

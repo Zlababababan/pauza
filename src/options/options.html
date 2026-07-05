@@ -40,9 +40,9 @@
             <input type="radio" name="severity" value="friction" checked>
             <span><strong>Friction</strong> — une pause de quelques secondes et une question avant d'entrer. Tu peux toujours continuer.</span>
           </label>
-          <label class="radio disabled">
-            <input type="radio" name="severity" value="quota" disabled>
-            <span><strong>Quota</strong> — accès libre jusqu'à X min/jour. <em>Bientôt disponible (M2).</em></span>
+          <label class="radio">
+            <input type="radio" name="severity" value="quota">
+            <span><strong>Quota</strong> — accès libre jusqu'à X minutes par jour de temps actif, puis blocage jusqu'au lendemain.</span>
           </label>
           <label class="radio">
             <input type="radio" name="severity" value="block">
@@ -62,6 +62,15 @@
           </div>
         </fieldset>
 
+        <fieldset class="field sub" id="quota-options" hidden>
+          <legend>Réglage du quota</legend>
+          <label class="inline-label">Temps actif autorisé par jour
+            <span class="unit-field"><input id="quota-minutes" type="number" min="1" max="600" value="30"> min</span>
+          </label>
+          <p class="hint">Seul compte le temps où l'onglet est actif et la fenêtre au premier
+            plan. Un rappel discret arrive ~5 min avant la fin.</p>
+        </fieldset>
+
         <fieldset class="field sub" id="block-options" hidden>
           <legend>Au moment du blocage</legend>
           <label class="radio">
@@ -72,6 +81,29 @@
             <input type="radio" name="blockAction" value="closeTab">
             <span>Fermer l'onglet immédiatement</span>
           </label>
+        </fieldset>
+
+        <fieldset class="field sub" id="schedule-options" hidden>
+          <legend>
+            <label class="radio">
+              <input type="checkbox" id="schedule-enabled">
+              <span><strong>Seulement à certains moments</strong> — en dehors, la règle est inactive.</span>
+            </label>
+          </legend>
+          <div id="schedule-fields" hidden>
+            <div class="days" id="schedule-days">
+              <!-- généré par options.js : L M M J V S D -->
+            </div>
+            <div class="inline-fields">
+              <label>De
+                <span class="unit-field"><input id="schedule-from" type="time" value="09:00"></span>
+              </label>
+              <label>À
+                <span class="unit-field"><input id="schedule-to" type="time" value="18:00"></span>
+              </label>
+            </div>
+            <p class="hint">Une fin avant le début (ex. 22:00 → 06:00) couvre la nuit.</p>
+          </div>
         </fieldset>
 
         <button type="submit" class="primary">Ajouter la règle</button>

@@ -1,7 +1,7 @@
 // Popup : état du jour par règle. (Streaks et bouton panique : M4/M5.)
 
 import { SEVERITY, SUPPORT_URL } from '../common/constants.js';
-import { getRules, getStats, todayKey } from '../common/storage.js';
+import { getRules, getStats, todayKey, getUsageToday } from '../common/storage.js';
 
 const SEVERITY_LABELS = {
   [SEVERITY.OBSERVE]: 'Observer',
@@ -10,10 +10,18 @@ const SEVERITY_LABELS = {
   [SEVERITY.BLOCK]: 'Blocage',
 };
 
-function statsLine(rule, s) {
+function statsLine(rule, s, usedSeconds) {
   const parts = [];
   if (rule.severity === SEVERITY.OBSERVE) {
     parts.push(`${s.observed} visite${s.observed > 1 ? 's' : ''}`);
+  }
+  if (rule.severity === SEVERITY.QUOTA) {
+    const used = Math.round(usedSeconds / 60);
+    if (used >= rule.quotaMinutes) {
+      parts.push(`quota atteint (${rule.quotaMinutes} min)`);
+    } else {
+      parts.push(`${used} / ${rule.quotaMinutes} min aujourd'hui`);
+    }
   }
   if (rule.severity === SEVERITY.FRICTION) {
     parts.push(`${s.frictionShown} pause${s.frictionShown > 1 ? 's' : ''}`);
@@ -30,7 +38,7 @@ function statsLine(rule, s) {
 }
 
 async function render() {
-  const [rules, stats] = await Promise.all([getRules(), getStats()]);
+  const [rules, stats, usage] = await Promise.all([getRules(), getStats(), getUsageToday()]);
   const today = stats[todayKey()] ?? {};
   const active = rules.filter((r) => r.enabled !== false);
 
@@ -47,7 +55,7 @@ async function render() {
     name.textContent = `${rule.name || rule.targets[0]} — ${SEVERITY_LABELS[rule.severity]}`;
     const line = document.createElement('p');
     line.className = 'rule-stats';
-    line.textContent = statsLine(rule, s);
+    line.textContent = statsLine(rule, s, usage[rule.id] ?? 0);
     row.append(name, line);
     container.append(row);
   }
