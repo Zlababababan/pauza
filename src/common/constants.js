@@ -1,0 +1,32 @@
+export const SEVERITY = {
+  OBSERVE: 'observe',
+  FRICTION: 'friction',
+  QUOTA: 'quota', // M2
+  BLOCK: 'block',
+};
+
+export const BLOCK_ACTION = {
+  INTERSTITIAL: 'interstitial',
+  CLOSE_TAB: 'closeTab',
+};
+
+export const DEFAULTS = {
+  frictionDelaySec: 10,
+  allowDurationMin: 5,
+};
+
+export const MSG = {
+  INTERSTITIAL_SHOWN: 'interstitialShown', // { ruleId, mode }
+  REQUEST_ACCESS: 'requestAccess',         // { ruleId, url } -> { ok }
+  BLOCKED_CLOSE: 'blockedClose',           // { ruleId }
+};
+
+// Espace d'IDs DNR : session (allowances) en dessous, dynamiques au-dessus.
+export const DNR = {
+  DYNAMIC_RULE_BASE: 1000,
+  SESSION_RULE_MAX: 999,
+  PRIORITY_REDIRECT: 1,
+  PRIORITY_ALLOW: 100,
+};
+
+export const ALARM_ALLOWANCE_PREFIX = 'allowance:';
