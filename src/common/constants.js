@@ -22,11 +22,14 @@ export const MSG = {
 };
 
 // Espace d'IDs DNR : session (allowances) en dessous, dynamiques au-dessus.
+// Priorités : friction < allowance < blocage — une allowance accordée après une
+// friction outrepasse la friction, mais jamais un blocage sur la même cible.
 export const DNR = {
   DYNAMIC_RULE_BASE: 1000,
   SESSION_RULE_MAX: 999,
-  PRIORITY_REDIRECT: 1,
+  PRIORITY_FRICTION: 1,
   PRIORITY_ALLOW: 100,
+  PRIORITY_BLOCK: 200,
 };
 
 export const ALARM_ALLOWANCE_PREFIX = 'allowance:';

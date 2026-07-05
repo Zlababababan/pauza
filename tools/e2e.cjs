@@ -224,6 +224,58 @@ async function pollUrl(page, pred, timeout = 8000) {
     await shot2.goto(`chrome-extension://${extId}/src/pages/interstitial.html?rid=spa-friction&mode=friction&u=http://127.0.0.1:${PORT}/spa/feed`);
     await sleep(600);
     await shot2.screenshot({ path: path.join(__dirname, 'interstitial-friction.png') });
+    await shot.close().catch(() => {});
+    await shot2.close().catch(() => {});
+
+    // --- Phase 2 : préséance du blocage ---
+    const mkRule = (id, targets, severity, extra = {}) => ({
+      id, name: id, targets, severity, blockAction: 'interstitial',
+      frictionDelaySec: 2, allowDurationMin: 1, schedule: null,
+      quotaMinutes: null, locked: false, enabled: true, createdAt: Date.now(), ...extra,
+    });
+
+    // Friction ET blocage sur la même cible -> le blocage doit gagner (voie DNR)
+    await worker.evaluate(async (rules) => {
+      const cur = (await chrome.storage.local.get('rules')).rules ?? [];
+      await chrome.storage.local.set({ rules: [...cur, ...rules] });
+    }, [mkRule('both-friction', ['both.test'], 'friction'), mkRule('both-block', ['both.test'], 'block')]);
+    await sleep(600);
+    const pageB = await browser.newPage();
+    await pageB.goto('http://both.test/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    url = await pollUrl(pageB, (u) => u.includes('interstitial.html'));
+    step(url.includes('mode=block') && url.includes('rid=both-block'),
+      'Préséance : blocage > friction sur la même cible (DNR)', url);
+    await pageB.close().catch(() => {});
+
+    // Allowance en cours puis règle durcie en blocage -> blocage immédiat
+    await worker.evaluate(async (rule) => {
+      const cur = (await chrome.storage.local.get('rules')).rules ?? [];
+      await chrome.storage.local.set({ rules: [...cur, rule] });
+    }, mkRule('harden', ['127.0.0.1/spa2'], 'friction'));
+    await sleep(600);
+    const pageH = await browser.newPage();
+    await pageH.goto(`http://127.0.0.1:${PORT}/spa2/page`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await pollUrl(pageH, (u) => u.includes('interstitial.html'));
+    await sleep(2600); // délai de friction
+    await pageH.click('#btn-continue');
+    url = await pollUrl(pageH, (u) => u.includes('/spa2/page') && !u.includes('interstitial'));
+    step(url === `http://127.0.0.1:${PORT}/spa2/page`,
+      'Préséance : allowance accordée sur la règle friction', url);
+    // Durcissement : friction -> blocage
+    await worker.evaluate(async () => {
+      const { rules = [] } = await chrome.storage.local.get('rules');
+      rules.find((r) => r.id === 'harden').severity = 'block';
+      await chrome.storage.local.set({ rules });
+    });
+    await sleep(600);
+    const pruned = await worker.evaluate(async () =>
+      Object.keys((await chrome.storage.session.get('allowances')).allowances ?? {}));
+    await pageH.goto(`http://127.0.0.1:${PORT}/spa2/page`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    url = await pollUrl(pageH, (u) => u.includes('interstitial.html'));
+    step(url.includes('mode=block') && !pruned.some((k) => k.startsWith('harden|')),
+      'Préséance : durcir en blocage révoque l\'allowance et bloque immédiatement',
+      `url=${url} allowances=${JSON.stringify(pruned)}`);
+    await pageH.close().catch(() => {});
   } finally {
     await browser.close();
     server.close();

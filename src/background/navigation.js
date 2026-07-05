@@ -50,13 +50,18 @@ async function handleNavigation({ tabId, frameId, url }) {
         recordStat(rule.id, 'observed');
       }
       if (rule.severity === SEVERITY.FRICTION || rule.severity === SEVERITY.BLOCK) {
-        enforce ??= rule;
+        // La règle la plus stricte gagne : un blocage prime sur une friction.
+        if (!enforce || (enforce.severity !== SEVERITY.BLOCK && rule.severity === SEVERITY.BLOCK)) {
+          enforce = rule;
+        }
       }
     }
   }
   tabMatches.set(tabId, current);
 
-  if (!enforce || (await isAllowed(u))) return;
+  if (!enforce) return;
+  // Une allowance n'outrepasse qu'une friction, jamais un blocage.
+  if (enforce.severity === SEVERITY.FRICTION && (await isAllowed(u))) return;
 
   // Navigation SPA/bfcache passée sous le radar du DNR : on applique la règle ici.
   if (enforce.severity === SEVERITY.BLOCK && enforce.blockAction === BLOCK_ACTION.CLOSE_TAB) {

@@ -91,11 +91,17 @@ extension ne peut pas empêcher sa désinstallation — ne pas prétendre le con
 }
 ```
 
-### Espace d'IDs DNR
+### Espace d'IDs et priorités DNR
 
 - Règles dynamiques (compilées depuis les règles utilisateur) : IDs ≥ 1000,
   recompilation complète à chaque changement de `rules`.
 - Règles de session (allowances) : IDs 1…999, alloués incrémentalement.
+- **Priorités — la règle la plus stricte gagne toujours** :
+  friction (1) < allowance (100) < blocage (200). Une allowance accordée après
+  une friction outrepasse la friction, mais jamais un blocage sur la même cible.
+  Le suivi SPA applique la même préséance en JS. En complément, tout changement
+  de `rules` révoque les allowances dont la règle a disparu, a été suspendue ou
+  durcie — assouplir n'est jamais implicite, durcir prend effet immédiatement.
 
 ## Ordre de construction
 

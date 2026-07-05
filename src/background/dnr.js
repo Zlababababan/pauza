@@ -31,10 +31,11 @@ export async function rebuildDnrRules(rules) {
   for (const rule of rules) {
     if (!isIntercepting(rule)) continue;
     const prefix = redirectPrefix(rule);
+    const priority = rule.severity === SEVERITY.BLOCK ? DNR.PRIORITY_BLOCK : DNR.PRIORITY_FRICTION;
     for (const target of parsedTargets(rule)) {
       addRules.push({
         id: id++,
-        priority: DNR.PRIORITY_REDIRECT,
+        priority,
         action: {
           type: 'redirect',
           redirect: { regexSubstitution: prefix + '\\0' },

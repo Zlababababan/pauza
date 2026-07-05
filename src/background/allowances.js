@@ -3,8 +3,8 @@
 // + une entrée dans chrome.storage.session + une alarme d'expiration.
 // Les règles de session disparaissent au redémarrage du navigateur — c'est voulu.
 
-import { DNR, ALARM_ALLOWANCE_PREFIX } from '../common/constants.js';
-import { targetToRegexFilter, targetKey, urlMatchesTarget } from '../common/matching.js';
+import { DNR, SEVERITY, ALARM_ALLOWANCE_PREFIX } from '../common/constants.js';
+import { targetToRegexFilter, targetKey, urlMatchesTarget, parsedTargets } from '../common/matching.js';
 
 async function getAllowances() {
   const { allowances = {} } = await chrome.storage.session.get('allowances');
@@ -40,7 +40,7 @@ export async function grantAllowance(ruleId, target, minutes) {
     });
   }
 
-  allowances[key] = { dnrRuleId, expiresAt, domain: target.domain, path: target.path };
+  allowances[key] = { ruleId, dnrRuleId, expiresAt, domain: target.domain, path: target.path };
   await chrome.storage.session.set({ allowances });
   chrome.alarms.create(ALARM_ALLOWANCE_PREFIX + key, { when: expiresAt });
 }
@@ -84,4 +84,22 @@ export async function clearExpiredAllowances() {
   const now = Date.now();
   const expired = Object.keys(allowances).filter((k) => allowances[k].expiresAt <= now);
   await revoke(expired);
+}
+
+/**
+ * Révoque les allowances dont la règle a disparu, a été suspendue, a changé de
+ * sévérité ou ne cible plus le site : durcir une règle prend effet immédiatement,
+ * sans attendre l'expiration de l'accès accordé.
+ */
+export async function pruneAllowances(rules) {
+  const allowances = await getAllowances();
+  const byId = new Map(rules.map((r) => [r.id, r]));
+  const stale = Object.keys(allowances).filter((key) => {
+    const a = allowances[key];
+    const rule = byId.get(a.ruleId);
+    if (!rule || rule.enabled === false || rule.severity !== SEVERITY.FRICTION) return true;
+    const k = targetKey({ domain: a.domain, path: a.path });
+    return !parsedTargets(rule).some((t) => targetKey(t) === k);
+  });
+  await revoke(stale);
 }
