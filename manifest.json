@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Décroche",
+  "description": "Compagnon de sevrage : observe, freine ou bloque les sites qui te retiennent — à ton rythme, sans culpabilisation.",
+  "version": "0.1.0",
+  "permissions": [
+    "declarativeNetRequest",
+    "storage",
+    "tabs",
+    "webNavigation",
+    "alarms"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "Décroche"
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/pages/interstitial.html", "src/pages/closer.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
