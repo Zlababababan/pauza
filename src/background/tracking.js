@@ -10,6 +10,7 @@ import { SEVERITY, BLOCK_ACTION } from '../common/constants.js';
 import { matchingTarget } from '../common/matching.js';
 import { isRuleActiveNow } from '../common/schedule.js';
 import { getRules, addUsage, getUsageToday, isQuotaExhausted, recordStat } from '../common/storage.js';
+import { initI18n, t } from '../common/i18n.js';
 
 export const TICK_ALARM = 'quota-tick';
 const IDLE_SECONDS = 60;
@@ -122,11 +123,15 @@ async function maybeWarn(rule, usage) {
   if (warned[key]) return;
   warned[key] = true;
   await chrome.storage.session.set({ warned });
+  await initI18n();
   chrome.notifications.create({
     type: 'basic',
     iconUrl: '/icons/icon128.png',
     title: 'Décroche',
-    message: `Encore ${Math.max(1, Math.round(remainingMin))} min sur « ${rule.name || rule.targets[0]} » aujourd'hui. Bon moment pour conclure.`,
+    message: t('notif_quota_warning', {
+      min: Math.max(1, Math.round(remainingMin)),
+      name: rule.name || rule.targets[0],
+    }),
     silent: true,
   });
 }

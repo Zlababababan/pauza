@@ -1,41 +1,68 @@
 // Service worker : câble le moteur DNR, le suivi de navigation, les allowances,
 // le suivi du temps actif (quotas) et les messages des pages de l'extension.
 
-import { MSG } from '../common/constants.js';
-import { getRules, getRule, recordStat } from '../common/storage.js';
+import { MSG, ALARM_STRICT } from '../common/constants.js';
+import { getRules, getRule, recordStat, saveRules, setStrict } from '../common/storage.js';
 import { matchingTarget, parseTarget } from '../common/matching.js';
 import { nextEngineBoundary } from '../common/schedule.js';
 import { rebuildDnrRules } from './dnr.js';
 import { grantAllowance, handleAllowanceAlarm, clearExpiredAllowances, pruneAllowances } from './allowances.js';
 import { initNavigation } from './navigation.js';
 import { initTracking, reevaluate, TICK_ALARM } from './tracking.js';
+import { checkRulesChange, checkStrictChange, applyDueStrictActions, nextStrictDeadline } from './strict.js';
 
 const ENGINE_SYNC_ALARM = 'engine-sync';
 
 /**
- * Met le moteur en phase avec l'état courant (règles, horaires, quotas) et
- * programme le prochain point de bascule (borne horaire ou minuit).
+ * Met le moteur en phase avec l'état courant (règles, horaires, quotas, mode
+ * strict) et programme les prochains points de bascule.
  */
 async function syncEngine() {
+  await applyDueStrictActions();
   const rules = await getRules();
   await rebuildDnrRules(rules);
   await clearExpiredAllowances();
   await pruneAllowances(rules);
   chrome.alarms.create(ENGINE_SYNC_ALARM, { when: nextEngineBoundary(rules) });
+  const strictDeadline = await nextStrictDeadline();
+  if (strictDeadline) chrome.alarms.create(ALARM_STRICT, { when: strictDeadline });
+  else chrome.alarms.clear(ALARM_STRICT);
 }
 
 chrome.runtime.onInstalled.addListener(() => { syncEngine(); reevaluate(); });
 chrome.runtime.onStartup.addListener(() => { syncEngine(); reevaluate(); });
 
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.rules) {
-    syncEngine().catch((e) => console.error('syncEngine', e));
-    reevaluate();
+// Garde du mode strict : annule les assouplissements interdits, puis (re)met
+// le moteur en phase. La correction re-déclenche onChanged ; au second passage
+// la garde ne trouve plus rien à corriger.
+chrome.storage.onChanged.addListener(async (changes, area) => {
+  if (area !== 'local') return;
+  try {
+    if (changes.strict) {
+      const fixed = checkStrictChange(changes.strict.oldValue, changes.strict.newValue);
+      if (fixed) {
+        await setStrict(fixed);
+        return;
+      }
+    }
+    if (changes.rules) {
+      const fixed = await checkRulesChange(changes.rules.oldValue, changes.rules.newValue);
+      if (fixed) {
+        await saveRules(fixed);
+        return;
+      }
+    }
+    if (changes.rules || changes.strict) {
+      await syncEngine();
+      reevaluate();
+    }
+  } catch (e) {
+    console.error('storage.onChanged', e);
   }
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === ENGINE_SYNC_ALARM) {
+  if (alarm.name === ENGINE_SYNC_ALARM || alarm.name === ALARM_STRICT) {
     syncEngine().catch((e) => console.error('syncEngine', e));
     reevaluate();
   } else if (alarm.name === TICK_ALARM) {
