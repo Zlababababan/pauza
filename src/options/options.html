@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Décroche — Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Décroche</h1>
+      <p class="tagline">Choisis, site par site, le niveau d'accompagnement qui t'aide vraiment.</p>
+    </header>
+
+    <section>
+      <h2>Ajouter une règle</h2>
+      <form id="add-form">
+        <div class="field">
+          <label for="name">Nom <span class="optional">(facultatif)</span></label>
+          <input id="name" type="text" placeholder="Ex. : Réseaux sociaux">
+        </div>
+
+        <div class="field">
+          <label for="targets">Sites ciblés <span class="hint">— un par ligne : domaine
+            (<code>tiktok.com</code>), wildcard (<code>*.tiktok.com</code>) ou section
+            (<code>youtube.com/shorts</code>)</span></label>
+          <textarea id="targets" rows="3" required
+            placeholder="tiktok.com&#10;youtube.com/shorts"></textarea>
+          <p class="error" id="targets-error" hidden></p>
+        </div>
+
+        <fieldset class="field">
+          <legend>Sévérité</legend>
+          <label class="radio">
+            <input type="radio" name="severity" value="observe">
+            <span><strong>Observer</strong> — rien n'est bloqué, on compte simplement les visites.</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="severity" value="friction" checked>
+            <span><strong>Friction</strong> — une pause de quelques secondes et une question avant d'entrer. Tu peux toujours continuer.</span>
+          </label>
+          <label class="radio disabled">
+            <input type="radio" name="severity" value="quota" disabled>
+            <span><strong>Quota</strong> — accès libre jusqu'à X min/jour. <em>Bientôt disponible (M2).</em></span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="severity" value="block">
+            <span><strong>Blocage</strong> — aucun accès.</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="field sub" id="friction-options">
+          <legend>Réglages de la friction</legend>
+          <div class="inline-fields">
+            <label>Délai avant de pouvoir continuer
+              <span class="unit-field"><input id="friction-delay" type="number" min="3" max="120" value="10"> s</span>
+            </label>
+            <label>Durée de l'accès après « continuer »
+              <span class="unit-field"><input id="allow-duration" type="number" min="1" max="120" value="5"> min</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="field sub" id="block-options" hidden>
+          <legend>Au moment du blocage</legend>
+          <label class="radio">
+            <input type="radio" name="blockAction" value="interstitial" checked>
+            <span>Afficher une page de pause</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="blockAction" value="closeTab">
+            <span>Fermer l'onglet immédiatement</span>
+          </label>
+        </fieldset>
+
+        <button type="submit" class="primary">Ajouter la règle</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Règles actives</h2>
+      <div id="rules-list"></div>
+      <p class="empty" id="rules-empty" hidden>
+        Aucune règle pour l'instant. Ajoute un premier site ci-dessus — tu peux commencer
+        en douceur avec « Observer ».
+      </p>
+    </section>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>
