@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(npm test *)",
-      "Bash(node --test tests/matching.test.js)"
-    ]
-  }
-}
