@@ -145,3 +145,6 @@ button.primary:hover { filter: brightness(1.08); }
 .rule-actions button { font-size: 13px; padding: 6px 12px; }
 button.danger { color: var(--danger); border-color: var(--danger); background: transparent; }
 button.danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+
+.support { text-align: center; font-size: 13px; color: var(--muted); }
+.support a { color: var(--accent); }

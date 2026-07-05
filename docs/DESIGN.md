@@ -103,6 +103,28 @@ extension ne peut pas empêcher sa désinstallation — ne pas prétendre le con
   de `rules` révoque les allowances dont la règle a disparu, a été suspendue ou
   durcie — assouplir n'est jamais implicite, durcir prend effet immédiatement.
 
+## Portabilité future (mobile — hors scope, mais on prépare)
+
+Chrome mobile ne supporte pas les extensions ; les voies réalistes sont
+**Firefox pour Android** (extensions ouvertes depuis fin 2023, supporte
+`declarativeNetRequest`) et **Safari iOS** (web extensions converties via Xcode).
+Décisions pour garder cette porte ouverte, sans rien construire maintenant :
+
+- S'en tenir aux APIs WebExtension standard ; noter tout recours à une
+  spécificité Chrome. Le moment venu : polyfill `browser.*` et namespace unique.
+- Aucune dépendance à un serveur ni à un compte (déjà acté) : le modèle
+  « 100 % local » est portable tel quel.
+- UI responsive (le popup et les pages doivent tolérer des petits écrans).
+- La logique pure (matching, horaires, quotas) reste dans `src/common/`, sans
+  API navigateur : c'est elle qui se transplante.
+
+## Monétisation
+
+L'extension est gratuite pour toujours, jamais encombrante. Voir la section
+dédiée dans [PROGRESS.md](PROGRESS.md) : dons via lien discret (`SUPPORT_URL`
+dans `src/common/constants.js`, rien ne s'affiche tant qu'elle est nulle),
+pistes « supporter » cosmétique et subventions ; publicité et données exclues.
+
 ## Ordre de construction
 
 1. **M1 — Socle** : moteur de règles + blocage DNR + page intermédiaire (friction et

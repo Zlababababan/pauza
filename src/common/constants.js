@@ -33,3 +33,8 @@ export const DNR = {
 };
 
 export const ALARM_ALLOWANCE_PREFIX = 'allowance:';
+
+// Lien de soutien (Ko-fi, GitHub Sponsors, Liberapay…). Tant qu'il vaut null,
+// aucun élément de don n'apparaît dans l'interface. L'extension reste gratuite :
+// ce lien est le seul mécanisme de monétisation embarqué.
+export const SUPPORT_URL = null;

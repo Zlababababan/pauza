@@ -1,7 +1,7 @@
 // Page d'options : gestion des règles. Écrit dans chrome.storage.local ;
 // le service worker recompile les règles DNR via storage.onChanged.
 
-import { SEVERITY, BLOCK_ACTION, DEFAULTS } from '../common/constants.js';
+import { SEVERITY, BLOCK_ACTION, DEFAULTS, SUPPORT_URL } from '../common/constants.js';
 import { getRules, saveRules } from '../common/storage.js';
 import { parseTarget } from '../common/matching.js';
 
@@ -155,6 +155,11 @@ async function render() {
   const list = $('rules-list');
   list.replaceChildren(...rules.map(ruleCard));
   $('rules-empty').hidden = rules.length > 0;
+}
+
+if (SUPPORT_URL) {
+  $('support-link').href = SUPPORT_URL;
+  $('support').hidden = false;
 }
 
 render();

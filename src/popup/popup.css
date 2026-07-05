@@ -68,3 +68,12 @@ footer button {
   cursor: pointer;
 }
 footer button:hover { filter: brightness(1.08); }
+footer .support {
+  display: block;
+  text-align: center;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+}
+footer .support:hover { color: var(--accent); }

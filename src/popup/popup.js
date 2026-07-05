@@ -1,6 +1,6 @@
 // Popup : état du jour par règle. (Streaks et bouton panique : M4/M5.)
 
-import { SEVERITY } from '../common/constants.js';
+import { SEVERITY, SUPPORT_URL } from '../common/constants.js';
 import { getRules, getStats, todayKey } from '../common/storage.js';
 
 const SEVERITY_LABELS = {
@@ -57,5 +57,11 @@ async function render() {
 document.getElementById('open-options').addEventListener('click', () => {
   chrome.runtime.openOptionsPage();
 });
+
+if (SUPPORT_URL) {
+  const link = document.getElementById('support-link');
+  link.href = SUPPORT_URL;
+  link.hidden = false;
+}
 
 render();
