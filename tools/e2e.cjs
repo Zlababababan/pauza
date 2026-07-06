@@ -521,6 +521,118 @@ async function pollUrl(page, pred, timeout = 8000) {
     await opt2.screenshot({ path: path.join(OUT_DIR, 'options-strict.png'), fullPage: true });
     step(incog.length > 0, 'Strict : statut navigation privée affiché', incog.slice(0, 80));
     await opt2.close().catch(() => {});
+
+    // --- Phase 6 (M4) : tableau de bord, streaks, mode discret ---
+    const dkey = (offset) => {
+      const d = new Date(Date.now() + offset * 86400000);
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    };
+    // Historique : friction créée il y a 9 jours, poursuites à J-7 et J-3
+    // -> série courante attendue : 3 (J-2, J-1, J), record : 3 (J-6..J-4)
+    await worker.evaluate(async ({ rule, statsPatch }) => {
+      const cur = (await chrome.storage.local.get('rules')).rules ?? [];
+      const { stats = {} } = await chrome.storage.local.get('stats');
+      Object.assign(stats, statsPatch);
+      await chrome.storage.local.set({ rules: [...cur, rule], stats });
+    }, {
+      rule: { ...mkRule('dash-rule', ['dash.test'], 'friction'), createdAt: Date.now() - 9 * 86400000 },
+      statsPatch: {
+        [dkey(-7)]: { 'dash-rule': { continued: 2, frictionShown: 3 } },
+        [dkey(-3)]: { 'dash-rule': { continued: 1, frictionShown: 1 } },
+        [dkey(-1)]: { 'dash-rule': { frictionShown: 2, continued: 0 } },
+      },
+    });
+    await sleep(500);
+
+    const dash = await browser.newPage();
+    await dash.setViewport({ width: 760, height: 1200 });
+    await dash.goto(`chrome-extension://${extId}/src/dashboard/dashboard.html`);
+    await sleep(700);
+    const dashInfo = await dash.evaluate(() => {
+      const card = [...document.querySelectorAll('.card')]
+        .find((c) => c.textContent.includes('dash-rule'));
+      return card && {
+        streak: card.querySelector('.streak').textContent,
+        bars: card.querySelectorAll('.col').length,
+        tableRows: card.querySelectorAll('table tr').length,
+        totals: card.querySelector('.totals').textContent,
+      };
+    });
+    step(dashInfo?.streak.includes('Série en cours : 3 j') && dashInfo.streak.includes('record : 3 j'),
+      'Dashboard : streak courante et record calculés', dashInfo?.streak);
+    step(dashInfo?.bars === 14 && dashInfo.tableRows === 15,
+      'Dashboard : 14 colonnes + vue tableau', `bars=${dashInfo?.bars} rows=${dashInfo?.tableRows}`);
+
+    // Tooltip au survol d'une colonne
+    await dash.hover('.card .col:nth-child(8)');
+    await sleep(300);
+    const tipVisible = await dash.$eval('#tooltip', (el) => !el.hidden && el.textContent.length > 0);
+    step(tipVisible, 'Dashboard : tooltip au survol',
+      await dash.$eval('#tooltip', (el) => el.textContent));
+
+    // Ligne de quota sur la carte d'une règle quota
+    const quotaLine = await dash.evaluate(() => {
+      const card = [...document.querySelectorAll('.card')]
+        .find((c) => c.textContent.includes('quota-rule'));
+      return !!card?.querySelector('.quota-line');
+    });
+    step(quotaLine, 'Dashboard : ligne de quota affichée sur les règles quota');
+
+    // Popup : streak visible sur la règle
+    const pop3 = await browser.newPage();
+    await pop3.goto(`chrome-extension://${extId}/src/popup/popup.html`);
+    await sleep(500);
+    const popRow = await pop3.evaluate(() =>
+      [...document.querySelectorAll('.rule-row')]
+        .find((r) => r.textContent.includes('dash-rule'))?.textContent);
+    step(popRow?.includes('🌱 3'), 'Popup : streak affichée sur la règle', popRow);
+    await pop3.close().catch(() => {});
+
+    // Mode discret : flou des noms dans popup et dashboard
+    const opt3 = await browser.newPage();
+    await opt3.goto(`chrome-extension://${extId}/src/options/options.html`);
+    await sleep(600);
+    await opt3.click('#discreet-blur');
+    await sleep(400);
+    await dash.reload();
+    await sleep(700);
+    const blurred = await dash.$$eval('.site-name.blurred', (els) => els.length);
+    step(blurred > 0, 'Mode discret : noms floutés dans le tableau de bord', `${blurred} noms`);
+    await dash.screenshot({ path: path.join(OUT_DIR, 'dashboard.png') }).catch(() => {});
+    await dash.close().catch(() => {});
+
+    // PIN : définition, portail, mauvais PIN refusé, bon PIN débloque
+    await opt3.type('#pin-new', '1234');
+    await opt3.click('#pin-set');
+    await sleep(400);
+    const pinStatus = await opt3.$eval('#pin-status', (el) => el.textContent);
+    step(pinStatus.includes('PIN actif'), 'PIN : défini via les options', pinStatus);
+
+    await opt3.reload();
+    await sleep(600);
+    const gated = await opt3.evaluate(() => ({
+      gate: !document.getElementById('pin-gate').hidden,
+      main: document.querySelector('main').hidden,
+    }));
+    step(gated.gate && gated.main, 'PIN : portail affiché au rechargement, page masquée');
+
+    await opt3.type('#gate-pin', '9999');
+    await opt3.click('#gate-form button');
+    await sleep(400);
+    const wrongPin = await opt3.evaluate(() => ({
+      error: !document.getElementById('gate-error').hidden,
+      main: document.querySelector('main').hidden,
+    }));
+    step(wrongPin.error && wrongPin.main, 'PIN : mauvais PIN refusé');
+
+    await opt3.$eval('#gate-pin', (el) => (el.value = ''));
+    await opt3.type('#gate-pin', '1234');
+    await opt3.click('#gate-form button');
+    await sleep(400);
+    const unlocked = await opt3.evaluate(() => !document.querySelector('main').hidden);
+    step(unlocked, 'PIN : bon PIN débloque la page');
+    await opt3.close().catch(() => {});
   } finally {
     await browser.close();
     server.close();

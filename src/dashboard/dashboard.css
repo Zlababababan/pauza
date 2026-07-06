@@ -87,10 +87,12 @@ h1 { font-size: 24px; margin: 0 0 24px; }
   height: 100%;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   cursor: default;
 }
 .bar {
   width: 100%;
+  max-width: 22px; /* marques fines même avec peu de colonnes */
   min-height: 2px;
   background: var(--data);
   border-radius: 3px 3px 0 0; /* extrémité de donnée arrondie, base carrée */
