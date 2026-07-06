@@ -110,6 +110,20 @@ l'utilisateur qui l'a trouvé en dix secondes.
 absente dans l'état B — l'état par défaut (fonctionnalité non configurée) est celui que
 verront 100 % des nouveaux utilisateurs et c'est le moins testé.
 
+## 2026-07-06 — Dans une longue suite, les privilèges accumulés masquent les assertions tardives
+
+**Déclencheur :** une assertion en fin de banc E2E (« la contrainte se réapplique après
+expiration d'une dérogation globale ») échouait : la cible réutilisée avait reçu, vingt
+étapes plus tôt, une autorisation temporaire encore active qui laissait passer — le
+« comportement attendu » d'un autre test. L'échec accusait la fonctionnalité nouvelle,
+la cause était l'état hérité.
+
+**Règle :** toute assertion « X est bloqué/refusé/contraint » doit viser une ressource
+vierge (cible, compte, fixture dédiée) plutôt qu'une ressource déjà manipulée par la
+suite — les étapes précédentes accumulent des privilèges (caches, sessions, dérogations)
+qui font passer l'accès à tort. Ne réutiliser une ressource que pour tester précisément
+cette interaction.
+
 ## 2026-07-05 — Un bug rapporté par l'utilisateur cache souvent deux causes
 
 **Déclencheur :** « le blocage ne fonctionne pas » avait deux causes indépendantes

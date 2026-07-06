@@ -11,7 +11,7 @@ notables sont consignées pour ne pas avoir à les re-déduire du code.
 | M2 — Horaires et quotas | Plages horaires par règle, suivi du temps actif, quota/jour | ✅ Testé par Yassin le 2026-07-05, retours corrigés le 2026-07-06 |
 | M3 — Mode strict | Verrouillage des règles, délai 24 h, incognito guidé | ✅ Testé par Yassin le 2026-07-06 (correctif UI cartes inclus) |
 | M4 — Stats et streaks | Tableau de bord, mode discret (flou + PIN) | ✅ Livré le 2026-07-06, en attente du test manuel |
-| M5 — Finitions | Catégories prédéfinies, bouton panique, icônes définitives | ⬜ |
+| M5 — Finitions | Catégories prédéfinies, bouton panique, icônes définitives | ✅ Livré le 2026-07-06, test manuel groupé avec M4 |
 
 i18n FR/EN : livrée en avance (2026-07-06), sortie du périmètre M5.
 
@@ -105,6 +105,35 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 - Rétention des historiques stats/usage portée à 90 jours.
 - Liens de soutien : Yassin fournira Ko-fi + PayPal en fin de projet.
 - Banc E2E : 49 étapes.
+
+### 2026-07-06 — M5 livré (catégories, bouton panique, icônes)
+
+- M4 en attente de test manuel (plusieurs jours) : M5 lancé en parallèle sur
+  décision de Yassin, tout sera testé ensemble.
+- **Catégories prédéfinies** : jeton `@id` (ex. `@social`) stocké tel quel dans
+  `rule.targets`, résolu à chaque parsing dans `parsedTargets` — DNR, suivi SPA
+  et quotas couverts d'un coup, et les listes (curées dans
+  `src/common/categories.js`) s'enrichiront avec les mises à jour de
+  l'extension sans toucher aux règles existantes. Six catégories : réseaux
+  sociaux, vidéo/streaming, actualités, shopping, contenu adulte, jeux
+  d'argent. Chips cliquables dans le formulaire d'options (le textarea reste la
+  source de vérité), noms traduits sur les cartes et partout où la première
+  cible sert de nom (`ruleDisplayName`).
+- **Bouton panique** (popup, avec confirmation) : toutes les cibles suivies —
+  règles suspendues comprises, c'est le sens du bouton — bloquées 1 h.
+  Décisions : non annulable (il expire seul ; `isPanicActive` fait foi, le
+  storage n'est pas nettoyé à l'échéance), toujours l'interstitiel (jamais de
+  fermeture d'onglet), priorité DNR 300 au-dessus des allowances et du blocage,
+  même préséance côté SPA, balayage des onglets ouverts au déclenchement
+  (mécanique du quota épuisé).
+- **Icônes définitives** : anneau ouvert vers le haut-droit + fragment qui
+  s'échappe (« décrocher », plus un spinner), SVG paramétré par taille dans
+  `tools/gen-icons.cjs`.
+- Banc E2E : 62 étapes, 2 passes stables. Piège rejoué : le test d'expiration
+  de la panique doit viser une cible friction vierge, pas une cible ayant reçu
+  une allowance plus tôt dans le banc.
+- Liens de soutien : toujours en attente des URLs Ko-fi/PayPal de Yassin
+  (`SUPPORT_LINKS` prêt dans `src/common/constants.js`).
 
 ## Monétisation — pistes retenues
 
