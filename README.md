@@ -4,6 +4,10 @@ Extension Chrome (Manifest V3) — un compagnon de sevrage configurable, pas un 
 bloqueur. Un spectre de sévérité réglable par site : observer, freiner, limiter, bloquer.
 Ton neutre et bienveillant, jamais culpabilisant. 100 % local, aucun serveur.
 
+*Pauza is a caring companion to cut back on the sites that pull you in — see
+[docs/PRIVACY.md](docs/PRIVACY.md) (EN) for the privacy policy. An English
+README is coming with the store release.*
+
 Voir [docs/DESIGN.md](docs/DESIGN.md) pour la conception complète.
 
 ## Installation (développement)
@@ -50,3 +54,9 @@ docs/            # conception
 - [x] **M5 — Finitions** (catégories prédéfinies, bouton panique, icônes définitives)
 - [x] **1.0.0** — 7 langues, lien Ko-fi, packaging store (`tools/package.cjs`),
       fiche et privacy policy prêtes (`docs/STORE.md`, `docs/PRIVACY.md`)
+
+## Licence
+
+[GPL-3.0](LICENSE) : Pauza est libre et le restera. Tout fork doit republier
+son code sous la même licence — pas de version fermée, pas de version avec
+publicité ou télémétrie.
