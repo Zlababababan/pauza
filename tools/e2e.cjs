@@ -593,15 +593,22 @@ async function pollUrl(page, pred, timeout = 8000) {
     const opt3 = await browser.newPage();
     await opt3.goto(`chrome-extension://${extId}/src/options/options.html`);
     await sleep(600);
-    // Régression (bug Yassin) : sans PIN, le portail ne doit PAS être visible
-    // (l'attribut hidden était écrasé par le display:grid du CSS).
+    // Régression (bug Yassin) : sans PIN, aucun portail et page visible.
     const noPinState = await opt3.evaluate(() => ({
-      gateDisplay: getComputedStyle(document.getElementById('pin-gate')).display,
+      gate: !!document.getElementById('pin-gate'),
       mainVisible: !document.querySelector('main').hidden,
     }));
-    step(noPinState.gateDisplay === 'none' && noPinState.mainVisible,
+    step(!noPinState.gate && noPinState.mainVisible,
       'PIN : sans PIN, pas de portail et page visible', JSON.stringify(noPinState));
     await opt3.click('#discreet-blur');
+    await sleep(500);
+    // Flou immédiat sur la gestion des règles (noms + cibles)
+    const optBlur = await opt3.evaluate(() => ({
+      names: document.querySelectorAll('.rule-card .site-name.blurred').length,
+      targets: document.querySelectorAll('.rule-targets.blurred').length,
+    }));
+    step(optBlur.names > 0 && optBlur.targets > 0,
+      'Mode discret : noms et cibles floutés dans la gestion des règles', JSON.stringify(optBlur));
     await sleep(400);
     await dash.reload();
     await sleep(700);
@@ -620,7 +627,7 @@ async function pollUrl(page, pred, timeout = 8000) {
     await opt3.reload();
     await sleep(600);
     const gated = await opt3.evaluate(() => ({
-      gate: !document.getElementById('pin-gate').hidden,
+      gate: !!document.getElementById('pin-gate'),
       main: document.querySelector('main').hidden,
     }));
     step(gated.gate && gated.main, 'PIN : portail affiché au rechargement, page masquée');
@@ -641,6 +648,23 @@ async function pollUrl(page, pred, timeout = 8000) {
     const unlocked = await opt3.evaluate(() => !document.querySelector('main').hidden);
     step(unlocked, 'PIN : bon PIN débloque la page');
     await opt3.close().catch(() => {});
+
+    // La page statistiques est verrouillée par le même PIN
+    const dash2 = await browser.newPage();
+    await dash2.goto(`chrome-extension://${extId}/src/dashboard/dashboard.html`);
+    await sleep(600);
+    const dashGated = await dash2.evaluate(() => ({
+      gate: !!document.getElementById('pin-gate'),
+      main: document.querySelector('main').hidden,
+    }));
+    step(dashGated.gate && dashGated.main, 'PIN : la page statistiques est verrouillée aussi');
+    await dash2.type('#gate-pin', '1234');
+    await dash2.click('#gate-form button');
+    await sleep(400);
+    const dashUnlocked = await dash2.evaluate(() =>
+      !document.querySelector('main').hidden && !document.getElementById('pin-gate'));
+    step(dashUnlocked, 'PIN : bon PIN débloque les statistiques');
+    await dash2.close().catch(() => {});
   } finally {
     await browser.close();
     server.close();

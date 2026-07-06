@@ -6,6 +6,7 @@ import { SEVERITY } from '../common/constants.js';
 import { getRules, getStats, getUsage, getSettings } from '../common/storage.js';
 import { computeStreaks, listDayKeys } from '../common/streaks.js';
 import { initI18n, t, applyI18n, dateLocale } from '../common/i18n.js';
+import { installPinGate } from '../common/pin-gate.js';
 
 const DAYS_SHOWN = 14;
 
@@ -173,4 +174,5 @@ initI18n().then(() => {
   applyI18n();
   document.title = `Décroche — ${t('dashboard_title')}`;
   render();
+  installPinGate();
 });

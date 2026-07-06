@@ -152,11 +152,11 @@ export const fr = {
 
   // Mode discret
   discreet_title: 'Mode discret',
-  discreet_desc: 'Pour garder tes statistiques pour toi : noms de sites floutés, et un PIN sur cette page. C\'est de la confidentialité vis-à-vis de l\'entourage, pas de la sécurité.',
+  discreet_desc: 'Pour garder tes statistiques pour toi : noms de sites floutés, et un PIN sur cette page et sur les statistiques. C\'est de la confidentialité vis-à-vis de l\'entourage, pas de la sécurité.',
   discreet_blur: 'Flouter les noms de sites dans les statistiques',
   discreet_blur_hint: 'Clique sur un nom flouté pour le révéler un instant.',
-  pin_status_none: 'Aucun PIN sur la page d\'options.',
-  pin_status_set: 'PIN actif sur la page d\'options.',
+  pin_status_none: 'Aucun PIN.',
+  pin_status_set: 'PIN actif sur les options et les statistiques.',
   pin_new_ph: 'Nouveau PIN (4 à 8 chiffres)',
   pin_current_ph: 'PIN actuel',
   pin_set: 'Définir le PIN',

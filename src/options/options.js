@@ -6,6 +6,7 @@ import { SEVERITY, BLOCK_ACTION, DEFAULTS, SUPPORT_LINKS, STRICT_DELAY_MS } from
 import { getRules, saveRules, getStrict, setStrict, getSettings, patchSettings } from '../common/storage.js';
 import { parseTarget } from '../common/matching.js';
 import { initI18n, t, applyI18n, bindLangSwitcher, dateLocale } from '../common/i18n.js';
+import { installPinGate, sha256Hex } from '../common/pin-gate.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -126,7 +127,15 @@ function clampInt(value, min, max, fallback) {
 
 // --- Liste des règles ---
 
-function ruleCard(rule, strict) {
+function blurable(el, discreet) {
+  if (!discreet) return el;
+  el.classList.add('blurred');
+  el.title = t('discreet_blur_hint');
+  el.addEventListener('click', () => el.classList.toggle('revealed'));
+  return el;
+}
+
+function ruleCard(rule, strict, discreet) {
   const card = document.createElement('div');
   card.className = 'rule-card' + (rule.enabled === false ? ' off' : '');
   const guarded = strict.armed && rule.locked;
@@ -136,7 +145,10 @@ function ruleCard(rule, strict) {
 
   const title = document.createElement('p');
   title.className = 'rule-title';
-  title.textContent = rule.name || rule.targets[0];
+  const siteName = document.createElement('span');
+  siteName.className = 'site-name';
+  siteName.textContent = rule.name || rule.targets[0];
+  title.append(blurable(siteName, discreet));
   const badge = document.createElement('span');
   badge.className = `sev-badge ${rule.severity}`;
   badge.textContent = t('sev_' + rule.severity);
@@ -152,7 +164,7 @@ function ruleCard(rule, strict) {
   targets.className = 'rule-targets';
   targets.textContent = rule.targets.join(' · ');
 
-  main.append(title, targets);
+  main.append(title, blurable(targets, discreet));
 
   const meta = [];
   if (rule.severity === SEVERITY.FRICTION) {
@@ -295,11 +307,6 @@ $('incognito-open').addEventListener('click', () => {
 // Le PIN protège des regards de l'entourage, pas d'un attaquant : le hachage
 // SHA-256 en storage local est un rideau, pas un coffre. C'est assumé.
 
-async function sha256Hex(s) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 const PIN_FORMAT = /^\d{4,8}$/;
 
 async function renderDiscreet() {
@@ -349,34 +356,12 @@ $('pin-remove').addEventListener('click', async () => {
   renderDiscreet();
 });
 
-/** Portail PIN : la page ne s'affiche qu'après déverrouillage. */
-async function gate() {
-  const { pinHash } = await getSettings();
-  const main = document.querySelector('main');
-  if (!pinHash) {
-    main.hidden = false;
-    return;
-  }
-  $('pin-gate').hidden = false;
-  $('gate-pin').focus();
-  $('gate-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (await sha256Hex($('gate-pin').value) === pinHash) {
-      $('pin-gate').hidden = true;
-      main.hidden = false;
-    } else {
-      $('gate-error').hidden = false;
-      $('gate-pin').select();
-    }
-  });
-}
-
 // --- Rendu ---
 
 async function render() {
-  const [rules, strict] = await Promise.all([getRules(), getStrict()]);
+  const [rules, strict, settings] = await Promise.all([getRules(), getStrict(), getSettings()]);
   const list = $('rules-list');
-  list.replaceChildren(...rules.map((r) => ruleCard(r, strict)));
+  list.replaceChildren(...rules.map((r) => ruleCard(r, strict, settings.discreet === true)));
   $('rules-empty').hidden = rules.length > 0;
   await renderStrict();
 }
@@ -400,9 +385,10 @@ function renderSupport() {
 }
 
 // Le service worker peut corriger les règles (garde du mode strict) ou exécuter
-// une suppression différée : on re-rend quand le storage bouge sous nos pieds.
+// une suppression différée, et le flou doit réagir immédiatement au réglage :
+// on re-rend quand le storage bouge sous nos pieds.
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && (changes.rules || changes.strict)) render();
+  if (area === 'local' && (changes.rules || changes.strict || changes.settings)) render();
 });
 
 initI18n().then(() => {
@@ -413,5 +399,5 @@ initI18n().then(() => {
   renderSupport();
   renderDiscreet();
   render();
-  gate();
+  installPinGate();
 });

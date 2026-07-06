@@ -151,11 +151,11 @@ export const en = {
 
   // Discreet mode
   discreet_title: 'Discreet mode',
-  discreet_desc: 'To keep your statistics to yourself: blurred site names, and a PIN on this page. This is privacy from people around you, not security.',
+  discreet_desc: 'To keep your statistics to yourself: blurred site names, and a PIN on this page and on the statistics. This is privacy from people around you, not security.',
   discreet_blur: 'Blur site names in statistics',
   discreet_blur_hint: 'Click a blurred name to reveal it for a moment.',
-  pin_status_none: 'No PIN on the options page.',
-  pin_status_set: 'PIN active on the options page.',
+  pin_status_none: 'No PIN.',
+  pin_status_set: 'PIN active on options and statistics.',
   pin_new_ph: 'New PIN (4 to 8 digits)',
   pin_current_ph: 'Current PIN',
   pin_set: 'Set PIN',
