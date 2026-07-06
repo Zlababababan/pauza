@@ -4,14 +4,16 @@
 // ces listes profite automatiquement aux règles existantes.
 //
 // Domaines uniquement (les sous-domaines sont couverts par le matching) ;
-// les listes visent les sites majeurs, pas l'exhaustivité — l'utilisateur
-// peut toujours compléter cible par cible.
+// les listes visent les sites majeurs — internationaux d'abord, plus les
+// incontournables locaux (FR aujourd'hui) — pas l'exhaustivité :
+// l'utilisateur peut toujours compléter cible par cible.
 
 export const CATEGORIES = {
   social: [
     'facebook.com',
     'instagram.com',
     'tiktok.com',
+    'douyin.com',
     'x.com',
     'twitter.com',
     'snapchat.com',
@@ -20,7 +22,11 @@ export const CATEGORIES = {
     'pinterest.com',
     'tumblr.com',
     'bsky.app',
+    'mastodon.social',
     'discord.com',
+    'vk.com',
+    'weibo.com',
+    '9gag.com',
   ],
   video: [
     'youtube.com',
@@ -29,8 +35,14 @@ export const CATEGORIES = {
     'netflix.com',
     'primevideo.com',
     'disneyplus.com',
+    'max.com',
+    'hulu.com',
     'dailymotion.com',
+    'vimeo.com',
     'crunchyroll.com',
+    'bilibili.com',
+    'nicovideo.jp',
+    'rumble.com',
   ],
   news: [
     'lemonde.fr',
@@ -43,13 +55,27 @@ export const CATEGORIES = {
     'cnews.fr',
     'news.google.com',
     'bbc.com',
+    'bbc.co.uk',
     'cnn.com',
     'nytimes.com',
+    'theguardian.com',
+    'washingtonpost.com',
+    'foxnews.com',
+    'dailymail.co.uk',
+    'spiegel.de',
+    'bild.de',
+    'elpais.com',
+    'corriere.it',
+    'aljazeera.com',
+    'reuters.com',
   ],
   shopping: [
     'amazon.fr',
     'amazon.com',
+    'amazon.de',
+    'amazon.co.uk',
     'aliexpress.com',
+    'alibaba.com',
     'temu.com',
     'shein.com',
     'vinted.fr',
@@ -59,6 +85,12 @@ export const CATEGORIES = {
     'leboncoin.fr',
     'etsy.com',
     'wish.com',
+    'walmart.com',
+    'target.com',
+    'rakuten.com',
+    'mercadolibre.com',
+    'asos.com',
+    'zalando.fr',
   ],
   adult: [
     'pornhub.com',
@@ -68,10 +100,20 @@ export const CATEGORIES = {
     'redtube.com',
     'youporn.com',
     'spankbang.com',
+    'eporner.com',
+    'hqporner.com',
+    'tnaflix.com',
+    'motherless.com',
+    'rule34.xxx',
+    'nhentai.net',
     'onlyfans.com',
+    'fansly.com',
     'chaturbate.com',
     'stripchat.com',
     'livejasmin.com',
+    'bongacams.com',
+    'cam4.com',
+    'myfreecams.com',
   ],
   gambling: [
     'winamax.fr',
@@ -84,9 +126,19 @@ export const CATEGORIES = {
     'pokerstars.fr',
     'pokerstars.com',
     'bwin.fr',
+    'bwin.com',
     'bet365.com',
     'stake.com',
     'netbet.fr',
+    '888.com',
+    'williamhill.com',
+    'ladbrokes.com',
+    'paddypower.com',
+    'betway.com',
+    'draftkings.com',
+    'fanduel.com',
+    '1xbet.com',
+    'roobet.com',
   ],
 };
 
