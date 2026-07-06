@@ -90,6 +90,19 @@ footer .support a:hover { color: var(--accent); }
   padding: 2px 4px;
 }
 
+.site-name.blurred { filter: blur(4px); cursor: pointer; }
+.site-name.blurred.revealed { filter: none; }
+
+.dash-link {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: 8px;
+}
+.dash-link:hover { color: var(--accent); }
+
 .strict-banner {
   margin: 0 12px 8px;
   padding: 6px 10px;

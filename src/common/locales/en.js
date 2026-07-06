@@ -131,4 +131,38 @@ export const en = {
 
   // Notifications
   notif_quota_warning: '{min} min left on "{name}" today. Good moment to wrap up.',
+
+  // Dashboard
+  dashboard_title: 'Statistics',
+  dashboard_subtitle: 'Last 14 days',
+  dashboard_open: 'See my statistics',
+  dashboard_empty: 'Nothing to show yet — statistics will appear with your first rules.',
+  dashboard_table: 'View as table',
+  streak_line: '🌱 Current streak: {n} d · best: {best} d',
+  streak_badge: '🌱 {n} d',
+  metric_observed: 'visits',
+  metric_continued: 'continued',
+  metric_blocked: 'attempts',
+  metric_minutes: 'active minutes',
+  quota_exceeded_note: 'quota exceeded',
+  totals_line: 'Last 7 days: {a} · last 30 days: {b}',
+  col_day: 'Day',
+  col_value: 'Value',
+
+  // Discreet mode
+  discreet_title: 'Discreet mode',
+  discreet_desc: 'To keep your statistics to yourself: blurred site names, and a PIN on this page. This is privacy from people around you, not security.',
+  discreet_blur: 'Blur site names in statistics',
+  discreet_blur_hint: 'Click a blurred name to reveal it for a moment.',
+  pin_status_none: 'No PIN on the options page.',
+  pin_status_set: 'PIN active on the options page.',
+  pin_new_ph: 'New PIN (4 to 8 digits)',
+  pin_current_ph: 'Current PIN',
+  pin_set: 'Set PIN',
+  pin_change: 'Change PIN',
+  pin_remove: 'Remove PIN',
+  pin_wrong: 'Wrong PIN.',
+  pin_invalid: 'The PIN must be 4 to 8 digits.',
+  pin_gate_prompt: 'This page is protected. Enter your PIN to continue.',
+  pin_unlock: 'Unlock',
 };

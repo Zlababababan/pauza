@@ -1,7 +1,8 @@
 // Popup : état du jour par règle, indicateur de mode strict. (Streaks : M4.)
 
 import { SEVERITY, SUPPORT_LINKS } from '../common/constants.js';
-import { getRules, getStats, todayKey, getUsageToday, getStrict } from '../common/storage.js';
+import { getRules, getStats, todayKey, getUsage, getSettings, getStrict } from '../common/storage.js';
+import { computeStreaks } from '../common/streaks.js';
 import { initI18n, t, tn, applyI18n, bindLangSwitcher, dateLocale } from '../common/i18n.js';
 
 function statsLine(rule, s, usedSeconds) {
@@ -28,10 +29,11 @@ function statsLine(rule, s, usedSeconds) {
 }
 
 async function render() {
-  const [rules, stats, usage, strict] = await Promise.all([
-    getRules(), getStats(), getUsageToday(), getStrict(),
+  const [rules, stats, usage, strict, settings] = await Promise.all([
+    getRules(), getStats(), getUsage(), getStrict(), getSettings(),
   ]);
   const today = stats[todayKey()] ?? {};
+  const usageToday = usage[todayKey()] ?? {};
   const active = rules.filter((r) => r.enabled !== false);
 
   document.getElementById('date').textContent =
@@ -55,10 +57,19 @@ async function render() {
     row.className = 'rule-row';
     const name = document.createElement('p');
     name.className = 'rule-name';
-    name.textContent = `${rule.name || rule.targets[0]} — ${t('sev_' + rule.severity)}`;
+    const site = document.createElement('span');
+    site.className = 'site-name' + (settings.discreet === true ? ' blurred' : '');
+    site.textContent = rule.name || rule.targets[0];
+    if (settings.discreet === true) {
+      site.addEventListener('click', () => site.classList.toggle('revealed'));
+    }
+    name.append(site, ` — ${t('sev_' + rule.severity)}`);
     const line = document.createElement('p');
     line.className = 'rule-stats';
-    line.textContent = statsLine(rule, s, usage[rule.id] ?? 0);
+    const parts = [statsLine(rule, s, usageToday[rule.id] ?? 0)];
+    const { current } = computeStreaks(rule, stats, usage);
+    if (current > 0) parts.push(t('streak_badge', { n: current }));
+    line.textContent = parts.join(' · ');
     row.append(name, line);
     container.append(row);
   }
@@ -85,6 +96,11 @@ function renderSupport() {
 
 document.getElementById('open-options').addEventListener('click', () => {
   chrome.runtime.openOptionsPage();
+});
+
+document.getElementById('open-dashboard').addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: chrome.runtime.getURL('src/dashboard/dashboard.html') });
 });
 
 initI18n().then(() => {

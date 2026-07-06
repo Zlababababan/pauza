@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Décroche — Statistiques</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div class="header-row">
+        <h1>Décroche <span class="page-name" data-i18n="dashboard_title"></span></h1>
+        <span class="subtitle" data-i18n="dashboard_subtitle"></span>
+      </div>
+    </header>
+
+    <div id="cards"></div>
+    <p class="empty" id="empty" hidden data-i18n="dashboard_empty"></p>
+  </main>
+  <div id="tooltip" class="tooltip" hidden></div>
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>

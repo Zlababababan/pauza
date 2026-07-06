@@ -7,7 +7,18 @@
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <main>
+  <div id="pin-gate" hidden>
+    <div class="gate-card">
+      <h1>Décroche</h1>
+      <p data-i18n="pin_gate_prompt"></p>
+      <form id="gate-form">
+        <input id="gate-pin" type="password" inputmode="numeric" autocomplete="off">
+        <button type="submit" class="primary" data-i18n="pin_unlock"></button>
+      </form>
+      <p class="error" id="gate-error" hidden data-i18n="pin_wrong"></p>
+    </div>
+  </div>
+  <main hidden>
     <header>
       <div class="header-row">
         <h1>Décroche</h1>
@@ -121,6 +132,26 @@
       <button id="incognito-open" data-i18n="strict_incognito_open" hidden></button>
       <p id="strict-status" class="strict-status"></p>
       <div class="strict-actions" id="strict-actions"></div>
+    </section>
+
+    <section id="discreet-section">
+      <h2 data-i18n="discreet_title"></h2>
+      <p class="hint" data-i18n="discreet_desc"></p>
+      <label class="radio">
+        <input type="checkbox" id="discreet-blur">
+        <span data-i18n="discreet_blur"></span>
+      </label>
+      <p class="hint" data-i18n="discreet_blur_hint"></p>
+      <p id="pin-status" class="strict-status"></p>
+      <div class="pin-fields">
+        <input id="pin-current" type="password" inputmode="numeric" autocomplete="off" hidden
+          data-i18n-placeholder="pin_current_ph">
+        <input id="pin-new" type="password" inputmode="numeric" autocomplete="off"
+          data-i18n-placeholder="pin_new_ph">
+        <button id="pin-set"></button>
+        <button id="pin-remove" class="danger" hidden data-i18n="pin_remove"></button>
+      </div>
+      <p class="error" id="pin-error" hidden></p>
     </section>
 
     <footer class="support" id="support" hidden>

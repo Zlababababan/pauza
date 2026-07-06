@@ -33,6 +33,16 @@ function enqueue(fn) {
   return writeQueue;
 }
 
+// Historique conservé pour le tableau de bord et les streaks.
+const RETENTION_DAYS = 90;
+
+function pruneOldDays(byDay) {
+  const cutoff = todayKey(new Date(Date.now() - RETENTION_DAYS * 86_400_000));
+  for (const key of Object.keys(byDay)) {
+    if (key < cutoff) delete byDay[key];
+  }
+}
+
 /**
  * Incrémente un compteur du jour pour une règle.
  * @param {string} ruleId
@@ -44,6 +54,7 @@ export function recordStat(ruleId, field, n = 1) {
     const day = (stats[todayKey()] ??= {});
     const entry = (day[ruleId] ??= { observed: 0, frictionShown: 0, continued: 0, blocked: 0 });
     entry[field] = (entry[field] ?? 0) + n;
+    pruneOldDays(stats);
     await chrome.storage.local.set({ stats });
   });
 }
@@ -55,17 +66,33 @@ export async function getUsageToday() {
   return usage[todayKey()] ?? {};
 }
 
+export async function getUsage() {
+  const { usage = {} } = await chrome.storage.local.get('usage');
+  return usage;
+}
+
 /** Ajoute du temps actif (secondes) au compteur du jour d'une règle. */
 export function addUsage(ruleId, seconds) {
   return enqueue(async () => {
     const { usage = {} } = await chrome.storage.local.get('usage');
     const day = (usage[todayKey()] ??= {});
     day[ruleId] = (day[ruleId] ?? 0) + seconds;
-    // On ne garde que 7 jours d'usage (les stats agrégées viendront en M4).
-    for (const key of Object.keys(usage)) {
-      if (key < todayKey(new Date(Date.now() - 7 * 86_400_000))) delete usage[key];
-    }
+    pruneOldDays(usage);
     await chrome.storage.local.set({ usage });
+  });
+}
+
+// --- Réglages divers ({ idleSeconds?, discreet?, pinHash? }) ---
+
+export async function getSettings() {
+  const { settings = {} } = await chrome.storage.local.get('settings');
+  return settings;
+}
+
+export function patchSettings(patch) {
+  return enqueue(async () => {
+    const { settings = {} } = await chrome.storage.local.get('settings');
+    await chrome.storage.local.set({ settings: { ...settings, ...patch } });
   });
 }
 

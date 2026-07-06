@@ -3,7 +3,7 @@
 // et fait respecter le mode strict (garde anti-assouplissement).
 
 import { SEVERITY, BLOCK_ACTION, DEFAULTS, SUPPORT_LINKS, STRICT_DELAY_MS } from '../common/constants.js';
-import { getRules, saveRules, getStrict, setStrict } from '../common/storage.js';
+import { getRules, saveRules, getStrict, setStrict, getSettings, patchSettings } from '../common/storage.js';
 import { parseTarget } from '../common/matching.js';
 import { initI18n, t, applyI18n, bindLangSwitcher, dateLocale } from '../common/i18n.js';
 
@@ -291,6 +291,86 @@ $('incognito-open').addEventListener('click', () => {
   chrome.tabs.create({ url: `chrome://extensions/?id=${chrome.runtime.id}` });
 });
 
+// --- Mode discret : flou + PIN ---
+// Le PIN protège des regards de l'entourage, pas d'un attaquant : le hachage
+// SHA-256 en storage local est un rideau, pas un coffre. C'est assumé.
+
+async function sha256Hex(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+const PIN_FORMAT = /^\d{4,8}$/;
+
+async function renderDiscreet() {
+  const settings = await getSettings();
+  $('discreet-blur').checked = settings.discreet === true;
+  const hasPin = !!settings.pinHash;
+  $('pin-status').textContent = t(hasPin ? 'pin_status_set' : 'pin_status_none');
+  $('pin-current').hidden = !hasPin;
+  $('pin-set').textContent = t(hasPin ? 'pin_change' : 'pin_set');
+  $('pin-remove').hidden = !hasPin;
+  $('pin-error').hidden = true;
+}
+
+$('discreet-blur').addEventListener('change', async () => {
+  await patchSettings({ discreet: $('discreet-blur').checked });
+});
+
+function pinError(key) {
+  $('pin-error').textContent = t(key);
+  $('pin-error').hidden = false;
+}
+
+async function checkCurrentPin() {
+  const { pinHash } = await getSettings();
+  if (!pinHash) return true;
+  if (await sha256Hex($('pin-current').value) !== pinHash) {
+    pinError('pin_wrong');
+    return false;
+  }
+  return true;
+}
+
+$('pin-set').addEventListener('click', async () => {
+  const next = $('pin-new').value;
+  if (!PIN_FORMAT.test(next)) return pinError('pin_invalid');
+  if (!(await checkCurrentPin())) return;
+  await patchSettings({ pinHash: await sha256Hex(next) });
+  $('pin-new').value = '';
+  $('pin-current').value = '';
+  renderDiscreet();
+});
+
+$('pin-remove').addEventListener('click', async () => {
+  if (!(await checkCurrentPin())) return;
+  await patchSettings({ pinHash: null });
+  $('pin-current').value = '';
+  renderDiscreet();
+});
+
+/** Portail PIN : la page ne s'affiche qu'après déverrouillage. */
+async function gate() {
+  const { pinHash } = await getSettings();
+  const main = document.querySelector('main');
+  if (!pinHash) {
+    main.hidden = false;
+    return;
+  }
+  $('pin-gate').hidden = false;
+  $('gate-pin').focus();
+  $('gate-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (await sha256Hex($('gate-pin').value) === pinHash) {
+      $('pin-gate').hidden = true;
+      main.hidden = false;
+    } else {
+      $('gate-error').hidden = false;
+      $('gate-pin').select();
+    }
+  });
+}
+
 // --- Rendu ---
 
 async function render() {
@@ -331,5 +411,7 @@ initI18n().then(() => {
   buildDayChips();
   refreshSubOptions();
   renderSupport();
+  renderDiscreet();
   render();
+  gate();
 });

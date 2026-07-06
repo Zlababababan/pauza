@@ -132,4 +132,38 @@ export const fr = {
 
   // Notifications
   notif_quota_warning: 'Encore {min} min sur « {name} » aujourd\'hui. Bon moment pour conclure.',
+
+  // Tableau de bord
+  dashboard_title: 'Statistiques',
+  dashboard_subtitle: '14 derniers jours',
+  dashboard_open: 'Voir mes statistiques',
+  dashboard_empty: 'Rien à montrer pour l\'instant — les statistiques apparaîtront avec tes premières règles.',
+  dashboard_table: 'Voir en tableau',
+  streak_line: '🌱 Série en cours : {n} j · record : {best} j',
+  streak_badge: '🌱 {n} j',
+  metric_observed: 'visites',
+  metric_continued: 'poursuites',
+  metric_blocked: 'tentatives',
+  metric_minutes: 'minutes actives',
+  quota_exceeded_note: 'quota dépassé',
+  totals_line: '7 derniers jours : {a} · 30 derniers jours : {b}',
+  col_day: 'Jour',
+  col_value: 'Valeur',
+
+  // Mode discret
+  discreet_title: 'Mode discret',
+  discreet_desc: 'Pour garder tes statistiques pour toi : noms de sites floutés, et un PIN sur cette page. C\'est de la confidentialité vis-à-vis de l\'entourage, pas de la sécurité.',
+  discreet_blur: 'Flouter les noms de sites dans les statistiques',
+  discreet_blur_hint: 'Clique sur un nom flouté pour le révéler un instant.',
+  pin_status_none: 'Aucun PIN sur la page d\'options.',
+  pin_status_set: 'PIN actif sur la page d\'options.',
+  pin_new_ph: 'Nouveau PIN (4 à 8 chiffres)',
+  pin_current_ph: 'PIN actuel',
+  pin_set: 'Définir le PIN',
+  pin_change: 'Changer le PIN',
+  pin_remove: 'Retirer le PIN',
+  pin_wrong: 'PIN incorrect.',
+  pin_invalid: 'Le PIN doit faire 4 à 8 chiffres.',
+  pin_gate_prompt: 'Cette page est protégée. Entre ton PIN pour continuer.',
+  pin_unlock: 'Déverrouiller',
 };
