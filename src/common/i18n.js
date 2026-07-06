@@ -4,12 +4,22 @@
 
 import { fr } from './locales/fr.js';
 import { en } from './locales/en.js';
+import { es } from './locales/es.js';
+import { de } from './locales/de.js';
+import { it } from './locales/it.js';
+import { pt } from './locales/pt.js';
+import { pl } from './locales/pl.js';
 import { categoryId } from './categories.js';
 
-const DICTS = { fr, en };
+const DICTS = { fr, en, es, de, it, pt, pl };
 export const AVAILABLE_LANGS = [
-  { code: 'fr', label: 'Français' },
-  { code: 'en', label: 'English' },
+  { code: 'fr', label: '🇫🇷 Français' },
+  { code: 'en', label: '🇬🇧 English' },
+  { code: 'es', label: '🇪🇸 Español' },
+  { code: 'de', label: '🇩🇪 Deutsch' },
+  { code: 'it', label: '🇮🇹 Italiano' },
+  { code: 'pt', label: '🇵🇹 Português' },
+  { code: 'pl', label: '🇵🇱 Polski' },
 ];
 
 let current = 'fr';
@@ -91,8 +101,12 @@ export function ruleDisplayName(rule) {
 }
 
 /** Locale BCP-47 pour les formats de date/heure. */
+const DATE_LOCALES = {
+  fr: 'fr-FR', en: 'en-US', es: 'es-ES', de: 'de-DE',
+  it: 'it-IT', pt: 'pt-BR', pl: 'pl-PL',
+};
 export function dateLocale() {
-  return current === 'fr' ? 'fr-FR' : 'en-US';
+  return DATE_LOCALES[current] ?? 'en-US';
 }
 
 /** Branche un <select> de langue : valeur courante + rechargement au changement. */

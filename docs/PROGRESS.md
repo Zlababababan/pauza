@@ -153,6 +153,20 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 - À la publication : fiche store EN par défaut + localisation FR (`_locales`
   pour le nom/description du manifest), README en anglais, port Firefox/AMO.
 
+### 2026-07-06 — Ko-fi branché, 7 langues, drapeaux
+
+- **Soutien** : `SUPPORT_LINKS.kofi = https://ko-fi.com/zlababababan` (fourni
+  par Yassin — à confirmer par un clic, Ko-fi bloque la vérification
+  automatisée). PayPal volontairement laissé désactivé.
+- **i18n élargie** : espagnol, allemand, italien, portugais (BR-neutre) et
+  polonais, en plus du FR (référence) et de l'anglais. Test de parité
+  (`tests/locales.test.js`) : mêmes clés que le FR et mêmes placeholders
+  `{param}` clé par clé — le repli clé-par-clé vers le FR reste le filet.
+  Pluriel polonais simplifié (forme 2–4), compromis v1 assumé.
+- **Drapeaux** dans le sélecteur de langue (emoji dans les libellés).
+  Limite connue : Windows affiche les emoji drapeaux en paires de lettres
+  (« FR », « GB ») — rendu correct sur macOS/Linux/Android.
+
 ## Monétisation — pistes retenues
 
 Contraintes posées : extension gratuite pour toujours, jamais encombrante,

@@ -41,8 +41,8 @@ export const ALARM_ALLOWANCE_PREFIX = 'allowance:';
 // kofi : page Ko-fi (ex. 'https://ko-fi.com/pauza')
 // paypal : lien PayPal.me (ex. 'https://paypal.me/pseudo')
 export const SUPPORT_LINKS = {
-  kofi: null,
-  paypal: null,
+  kofi: 'https://ko-fi.com/zlababababan',
+  paypal: null, // volontairement désactivé pour l'instant
 };
 
 // Mode strict : délai imposé aux demandes de suppression/désarmement.
