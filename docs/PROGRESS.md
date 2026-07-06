@@ -8,8 +8,8 @@ notables sont consignées pour ne pas avoir à les re-déduire du code.
 | Milestone | Contenu | État |
 | --- | --- | --- |
 | M1 — Socle | Moteur de règles, blocage DNR, interstitiels friction/blocage, options | ✅ Livré, validé manuellement le 2026-07-05 |
-| M2 — Horaires et quotas | Plages horaires par règle, suivi du temps actif, quota/jour | ✅ Testé par Yassin le 2026-07-05, retours corrigés le 2026-07-06 |
-| M3 — Mode strict | Verrouillage des règles, délai 24 h, incognito guidé | ✅ Testé par Yassin le 2026-07-06 (correctif UI cartes inclus) |
+| M2 — Horaires et quotas | Plages horaires par règle, suivi du temps actif, quota/jour | ✅ Testé par le mainteneur le 2026-07-05, retours corrigés le 2026-07-06 |
+| M3 — Mode strict | Verrouillage des règles, délai 24 h, incognito guidé | ✅ Testé par le mainteneur le 2026-07-06 (correctif UI cartes inclus) |
 | M4 — Stats et streaks | Tableau de bord, mode discret (flou + PIN) | ✅ Livré le 2026-07-06, en attente du test manuel |
 | M5 — Finitions | Catégories prédéfinies, bouton panique, icônes définitives | ✅ Livré le 2026-07-06, test manuel groupé avec M4 |
 
@@ -28,13 +28,13 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 - Banc E2E (`tools/e2e.cjs`) : Chrome for Testing headless piloté par
   puppeteer-core. A détecté un vrai bug avant livraison (double comptage
   « observer » après détour par l'interstitiel).
-- **Bug remonté par Yassin après test réel** : le blocage semblait inopérant sur
+- **Bug remonté par le mainteneur après test réel** : le blocage semblait inopérant sur
   youtube.com. Deux causes : égalité de priorité DNR entre friction et blocage
   (départage arbitraire de Chrome), et allowance de 5 min posée par le test de
   friction qui outrepassait le blocage ajouté ensuite.
 - **Décision** : hiérarchie de priorités explicite — friction (1) < allowance
   (100) < blocage (200). La règle la plus stricte gagne toujours ; durcir une
-  règle révoque immédiatement les allowances concernées. Re-validé par Yassin.
+  règle révoque immédiatement les allowances concernées. Re-validé par le mainteneur.
 
 ### 2026-07-05 — Pré-M2
 
@@ -77,7 +77,7 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 - **i18n FR/EN dynamique** : dictionnaires maison (`src/common/locales/`),
   `chrome.i18n` étant figé sur la langue du navigateur. Sélecteur discret dans
   popup et options, préférence en storage, FR par défaut et langue de référence.
-- **Soutien** : `SUPPORT_LINKS { kofi, paypal }` — en attente des URLs de Yassin.
+- **Soutien** : `SUPPORT_LINKS { kofi, paypal }` — en attente des URLs du mainteneur.
 - **M3 — mode strict** : armement 24 h / 7 j / permanent ; règles verrouillées
   gelées (garde par miroir en storage.session — la v1 comparait à l'oldValue de
   l'événement et oscillait en restaurant le sabotage, leçon consignée) ;
@@ -89,7 +89,7 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 
 ### 2026-07-06 — M4 livré (tableau de bord, streaks, mode discret)
 
-- M3 validé par Yassin (correctif : cartes de règles enroulables, la date sort
+- M3 validé par le mainteneur (correctif : cartes de règles enroulables, la date sort
   du bouton d'annulation de suppression).
 - **Streaks** : « jours propres » par sévérité (observe : 0 visite ; friction :
   0 poursuite ; quota : non épuisé ; blocage : 0 tentative), série courante +
@@ -103,13 +103,13 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
   bord ; PIN 4-8 chiffres sur la page d'options (SHA-256 local — rideau de
   confidentialité assumé, pas un coffre).
 - Rétention des historiques stats/usage portée à 90 jours.
-- Liens de soutien : Yassin fournira Ko-fi + PayPal en fin de projet.
+- Liens de soutien : le mainteneur fournira Ko-fi + PayPal en fin de projet.
 - Banc E2E : 49 étapes.
 
 ### 2026-07-06 — M5 livré (catégories, bouton panique, icônes)
 
 - M4 en attente de test manuel (plusieurs jours) : M5 lancé en parallèle sur
-  décision de Yassin, tout sera testé ensemble.
+  décision du mainteneur, tout sera testé ensemble.
 - **Catégories prédéfinies** : jeton `@id` (ex. `@social`) stocké tel quel dans
   `rule.targets`, résolu à chaque parsing dans `parsedTargets` — DNR, suivi SPA
   et quotas couverts d'un coup, et les listes (curées dans
@@ -132,23 +132,23 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 - Banc E2E : 62 étapes, 2 passes stables. Piège rejoué : le test d'expiration
   de la panique doit viser une cible friction vierge, pas une cible ayant reçu
   une allowance plus tôt dans le banc.
-- Liens de soutien : toujours en attente des URLs Ko-fi/PayPal de Yassin
+- Liens de soutien : toujours en attente des URLs Ko-fi/PayPal du mainteneur
   (`SUPPORT_LINKS` prêt dans `src/common/constants.js`).
 
 ### 2026-07-06 — Retours M5 : catégories internationales, renommage en Pauza
 
-- **Catégories enrichies** (retour Yassin) : ajout d'une quarantaine de sites
+- **Catégories enrichies** (retour le mainteneur) : ajout d'une quarantaine de sites
   internationaux (VK, Weibo, Douyin, Bilibili, Hulu, Max, Guardian, Spiegel,
   El País, Al Jazeera, Alibaba, Walmart, MercadoLibre, 888, William Hill,
   DraftKings, 1xBet…). Les listes restent « majors d'abord », complétables
   règle par règle.
-- **Renommage : Décroche → Pauza** (décision Yassin, objectif diffusion
+- **Renommage : Décroche → Pauza** (décision le mainteneur, objectif diffusion
   internationale). « Décroche » : accent intapable hors AZERTY, sens opaque
   hors francophonie ; « Unhook » (traduction littérale) déjà pris par une
   extension YouTube connue, « Pausa » déjà pris (overlay de respiration pour
   ChatGPT). « Pauza » : pause en polonais/tchèque/croate/roumain/serbe,
   transparent dans les autres langues, aucune collision trouvée sur le Web
-  Store (vérifié par Yassin). Renommé partout (manifest, UI, locales, docs,
+  Store (vérifié par le mainteneur). Renommé partout (manifest, UI, locales, docs,
   slugs internes) ; le dossier du dépôt garde son nom.
 - À la publication : fiche store EN par défaut + localisation FR (`_locales`
   pour le nom/description du manifest), README en anglais, port Firefox/AMO.
@@ -156,7 +156,7 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 ### 2026-07-06 — Ko-fi branché, 7 langues, drapeaux
 
 - **Soutien** : `SUPPORT_LINKS.kofi = https://ko-fi.com/zlababababan` (fourni
-  par Yassin — à confirmer par un clic, Ko-fi bloque la vérification
+  par le mainteneur — à confirmer par un clic, Ko-fi bloque la vérification
   automatisée). PayPal volontairement laissé désactivé.
 - **i18n élargie** : espagnol, allemand, italien, portugais (BR-neutre) et
   polonais, en plus du FR (référence) et de l'anglais. Test de parité
@@ -169,7 +169,7 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 
 ### 2026-07-06 — Préparation 1.0.0 (Chrome Web Store)
 
-- M4 + M5 validés par Yassin (correctifs éventuels différés).
+- M4 + M5 validés par le mainteneur (correctifs éventuels différés).
 - **Manifest 1.0.0** : description localisée via `_locales` (mécanisme Chrome,
   indépendant de l'i18n maison — il pilote chrome://extensions et la fiche
   store), `default_locale: en` comme demandé (anglais par défaut, tout

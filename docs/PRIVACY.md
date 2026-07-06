@@ -51,7 +51,7 @@ stays on your device" principle is not up for revision.
 
 ## Contact
 
-Questions or concerns: **yassin.bouchemit@gmail.com**
+Questions or concerns: **zlababababan@gmail.com**
 
 ---
 
@@ -111,4 +111,4 @@ version. Le principe « tout reste sur ton appareil » n'est pas négociable.
 
 ## Contact
 
-Questions : **yassin.bouchemit@gmail.com**
+Questions : **zlababababan@gmail.com**

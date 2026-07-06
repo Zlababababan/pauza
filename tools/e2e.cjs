@@ -593,7 +593,7 @@ async function pollUrl(page, pred, timeout = 8000) {
     const opt3 = await browser.newPage();
     await opt3.goto(`chrome-extension://${extId}/src/options/options.html`);
     await sleep(600);
-    // Régression (bug Yassin) : sans PIN, aucun portail et page visible.
+    // Régression (bug remonté par le mainteneur) : sans PIN, aucun portail et page visible.
     const noPinState = await opt3.evaluate(() => ({
       gate: !!document.getElementById('pin-gate'),
       mainVisible: !document.querySelector('main').hidden,
