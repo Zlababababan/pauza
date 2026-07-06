@@ -665,6 +665,140 @@ async function pollUrl(page, pred, timeout = 8000) {
       !document.querySelector('main').hidden && !document.getElementById('pin-gate'));
     step(dashUnlocked, 'PIN : bon PIN débloque les statistiques');
     await dash2.close().catch(() => {});
+
+    // --- Phase 7 (M5) : catégories prédéfinies + bouton panique ---
+
+    // Le PIN est couvert : on le retire pour la suite de la phase.
+    await worker.evaluate(async () => {
+      const { settings = {} } = await chrome.storage.local.get('settings');
+      settings.pinHash = null;
+      await chrome.storage.local.set({ settings });
+    });
+
+    // Chips : un clic ajoute le jeton @social aux cibles, un second le retire
+    const opt4 = await browser.newPage();
+    await opt4.goto(`chrome-extension://${extId}/src/options/options.html`);
+    await sleep(600);
+    const chipCount = await opt4.$$eval('#category-chips .chip', (els) => els.length);
+    await opt4.click('#category-chips .chip[data-cat="social"]');
+    const afterAdd = await opt4.$eval('#targets', (el) => el.value);
+    const chipActive = await opt4.$eval('#category-chips .chip[data-cat="social"]',
+      (el) => el.classList.contains('active'));
+    await opt4.click('#category-chips .chip[data-cat="social"]');
+    const afterRemove = await opt4.$eval('#targets', (el) => el.value);
+    step(chipCount === 6 && afterAdd.includes('@social') && chipActive && !afterRemove.includes('@social'),
+      'Catégories : chip -> jeton @social ajouté puis retiré des cibles',
+      `chips=${chipCount} add=« ${afterAdd} »`);
+
+    // Jeton de catégorie inconnu refusé comme une cible invalide
+    await opt4.$eval('#targets', (el) => (el.value = ''));
+    await opt4.type('#targets', '@inconnue');
+    await opt4.click('#add-form button.primary');
+    await sleep(300);
+    const catErr = await opt4.$eval('#targets-error', (el) => !el.hidden);
+    step(catErr, 'Catégories : jeton inconnu refusé par le formulaire');
+
+    // Règle blocage sur @social via l'UI ; la carte affiche le nom traduit
+    await opt4.$eval('#targets', (el) => (el.value = ''));
+    await opt4.type('#targets', '@social');
+    await opt4.click('input[name="severity"][value="block"]');
+    await opt4.click('#add-form button.primary');
+    await sleep(700);
+    const socialCard = await opt4.evaluate(() =>
+      [...document.querySelectorAll('.rule-card')]
+        .find((c) => c.textContent.includes('Réseaux sociaux'))
+        ?.querySelector('.rule-targets')?.textContent);
+    step(!!socialCard, 'Catégories : règle @social créée, nom traduit sur la carte', socialCard ?? '');
+    await opt4.screenshot({ path: path.join(OUT_DIR, 'options-categories.png'), fullPage: true });
+    await opt4.close().catch(() => {});
+
+    // DNR : les cibles de la catégorie sont compilées, tiktok.com intercepté
+    const dnrAfterCat = await worker.evaluate(() => chrome.declarativeNetRequest.getDynamicRules());
+    const socialCompiled = dnrAfterCat.filter((r) => r.condition.regexFilter.includes('tiktok'));
+    const pageT = await browser.newPage();
+    await pageT.goto('http://www.tiktok.com/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    url = await pollUrl(pageT, (u) => u.includes('interstitial.html'));
+    step(socialCompiled.length === 1 && url.includes('mode=block'),
+      'Catégories : cible de @social interceptée (tiktok.com -> blocage)',
+      `règles tiktok=${socialCompiled.length} url=${url.slice(0, 90)}`);
+    await pageT.close().catch(() => {});
+
+    // Panique — posées avant : une règle suspendue (sa cible doit être couverte
+    // aussi) et une friction vierge de toute allowance (pour le test d'expiration).
+    await worker.evaluate(async (rules) => {
+      const cur = (await chrome.storage.local.get('rules')).rules ?? [];
+      await chrome.storage.local.set({ rules: [...cur, ...rules] });
+    }, [
+      { ...mkRule('suspended', ['suspended.test'], 'block'), enabled: false },
+      mkRule('post-panic', ['postpanic.test'], 'friction'),
+    ]);
+    await sleep(600);
+
+    // Onglet déjà ouvert sur une cible suivie (règle observe sur 127.0.0.1)
+    const pageP = await browser.newPage();
+    await pageP.goto(`http://127.0.0.1:${PORT}/accueil`, { waitUntil: 'domcontentloaded' });
+
+    // Déclenchement depuis le popup : bouton -> confirmation -> oui
+    const pop4 = await browser.newPage();
+    await pop4.goto(`chrome-extension://${extId}/src/popup/popup.html`);
+    await sleep(500);
+    const btnVisible = await pop4.$eval('#panic-btn', (el) => !el.hidden);
+    await pop4.click('#panic-btn');
+    const confirmShown = await pop4.$eval('#panic-confirm', (el) => !el.hidden);
+    await pop4.click('#panic-yes');
+    await sleep(800);
+    const panicState = await worker.evaluate(async () =>
+      (await chrome.storage.local.get('panic')).panic);
+    const bannerShown = await pop4.$eval('#panic-banner', (el) => !el.hidden && el.textContent);
+    step(btnVisible && confirmShown && (panicState?.until ?? 0) > Date.now() + 55 * 60000 && !!bannerShown,
+      'Panique : confirmation puis armement 1 h depuis le popup', String(bannerShown));
+    await pop4.screenshot({ path: path.join(OUT_DIR, 'popup-panic.png') });
+    await pop4.close().catch(() => {});
+
+    // L'onglet déjà ouvert est balayé vers l'interstitiel panic (fin affichée)
+    url = await pollUrl(pageP, (u) => u.includes('mode=panic'));
+    await sleep(600);
+    const panicUi = await pageP.evaluate(() => ({
+      title: document.getElementById('title')?.textContent,
+      subtitle: document.getElementById('subtitle')?.textContent,
+    })).catch(() => ({}));
+    step(url.includes('mode=panic') && /Fin à/.test(panicUi.subtitle ?? ''),
+      'Panique : onglet ouvert balayé vers l\'interstitiel, fin affichée',
+      `« ${panicUi.title} » …${panicUi.subtitle?.slice(-25)}`);
+    await pageP.setViewport({ width: 800, height: 600 });
+    await pageP.screenshot({ path: path.join(OUT_DIR, 'interstitial-panic.png') }).catch(() => {});
+    await pageP.close().catch(() => {});
+
+    // La panique outrepasse la friction sur une nouvelle navigation (DNR)
+    const pageP2 = await browser.newPage();
+    await pageP2.goto(`http://127.0.0.1:${PORT}/spa/pendant-panique`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    url = await pollUrl(pageP2, (u) => u.includes('interstitial.html'));
+    step(url.includes('mode=panic'),
+      'Panique : outrepasse la friction (priorité DNR)', url.slice(0, 100));
+    await pageP2.close().catch(() => {});
+
+    // Les cibles d'une règle suspendue sont couvertes pendant la panique
+    const pageP3 = await browser.newPage();
+    await pageP3.goto('http://suspended.test/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    url = await pollUrl(pageP3, (u) => u.includes('interstitial.html'));
+    step(url.includes('mode=panic') && url.includes('rid=suspended'),
+      'Panique : règle suspendue quand même couverte', url.slice(0, 100));
+    await pageP3.close().catch(() => {});
+
+    // Expiration : échéance passée + sync -> les règles normales reprennent
+    await worker.evaluate(() => chrome.storage.local.set({ panic: { until: Date.now() + 1200 } }));
+    await sleep(2000);
+    await worker.evaluate(async () => { // resync (même mécanique que l'alarme)
+      const { rules = [] } = await chrome.storage.local.get('rules');
+      await chrome.storage.local.set({ rules: [...rules] });
+    });
+    await sleep(700);
+    const pageP4 = await browser.newPage();
+    await pageP4.goto('http://postpanic.test/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    url = await pollUrl(pageP4, (u) => u.includes('interstitial.html'));
+    step(url.includes('mode=friction') && url.includes('rid=post-panic'),
+      'Panique : expirée -> la friction reprend la main', url.slice(0, 100));
+    await pageP4.close().catch(() => {});
   } finally {
     await browser.close();
     server.close();
