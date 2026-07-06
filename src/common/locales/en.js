@@ -104,7 +104,7 @@ export const en = {
   btn_unlock: 'Unlock',
   locked_badge: '🔒 locked',
   btn_request_delete: 'Request deletion (24 h)',
-  btn_cancel_delete: 'Cancel deletion ({when})',
+  btn_cancel_delete: 'Cancel deletion',
   pending_delete_at: 'deletion on {when}',
 
   // Options — strict mode

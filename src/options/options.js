@@ -208,7 +208,7 @@ function ruleCard(rule, strict) {
       r.pendingDeleteAt = Date.now() + STRICT_DELAY_MS;
     }));
   } else {
-    deleteBtn.textContent = t('btn_cancel_delete', { when: fmtWhen(rule.pendingDeleteAt) });
+    deleteBtn.textContent = t('btn_cancel_delete');
     deleteBtn.addEventListener('click', () => updateRule(rule.id, (r) => {
       r.pendingDeleteAt = null;
     }));

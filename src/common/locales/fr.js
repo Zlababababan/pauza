@@ -105,7 +105,7 @@ export const fr = {
   btn_unlock: 'Déverrouiller',
   locked_badge: '🔒 verrouillée',
   btn_request_delete: 'Demander la suppression (24 h)',
-  btn_cancel_delete: 'Annuler la suppression ({when})',
+  btn_cancel_delete: 'Annuler la suppression',
   pending_delete_at: 'suppression le {when}',
 
   // Options — mode strict
