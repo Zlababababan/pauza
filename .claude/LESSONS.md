@@ -124,6 +124,21 @@ suite — les étapes précédentes accumulent des privilèges (caches, sessions
 qui font passer l'accès à tort. Ne réutiliser une ressource que pour tester précisément
 cette interaction.
 
+## 2026-07-06 — Valider un artefact avec un parseur indépendant de celui qui l'a produit
+
+**Déclencheur :** `tar -a -cf archive.zip` (bsdtar Windows) a produit silencieusement un
+TAR nommé `.zip`. La « vérification » (`tar -tf`) listait le contenu sans broncher — même
+outil, même format. C'est la plateforme cible (Chrome Web Store) qui a rejeté le fichier :
+« Package non valide ». Le premier octet (`manifest.json` en clair au lieu de `PK`) aurait
+suffi à le voir.
+
+**Règle :** un artefact destiné à un système tiers (archive, image, binaire signé) doit
+être validé par un LECTEUR INDÉPENDANT de l'outil qui l'a écrit — idéalement le parseur le
+plus proche de la cible — plus un contrôle bête de signature/magic bytes. Un outil qui
+relit sa propre sortie ne prouve que sa cohérence interne. Et pour un format simple et
+critique, un écrivain maison de 80 lignes sans dépendance bat un outil externe aux
+options piégeuses.
+
 ## 2026-07-05 — Un bug rapporté par l'utilisateur cache souvent deux causes
 
 **Déclencheur :** « le blocage ne fonctionne pas » avait deux causes indépendantes
