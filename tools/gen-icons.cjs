@@ -1,5 +1,5 @@
-// Génère les icônes de l'extension (placeholder M2, définitives en M5) en
-// screenshotant un rendu HTML dans Chrome for Testing.
+// Génère les icônes de l'extension (définitives M5) en screenshotant un rendu
+// HTML/SVG dans Chrome for Testing.
 // Usage : node tools/gen-icons.cjs  (mêmes prérequis que tools/e2e.cjs)
 const puppeteer = require('puppeteer-core');
 const fs = require('fs');
@@ -17,23 +17,48 @@ function findChrome() {
   throw new Error('Chrome for Testing introuvable — voir tools/e2e.cjs.');
 }
 
-// Anneau brisé : un cercle qui se « décroche », sur le vert du thème.
+// Motif « décrocher » : un anneau qui s'ouvre vers le haut-droit, et le
+// fragment manquant qui s'échappe dans l'axe de l'ouverture — lâcher prise,
+// pas un spinner. Dégradé de verts du thème, anneau blanc cassé.
+// Tout est dessiné en unités du viewBox 128 puis mis à l'échelle : le rendu
+// est identique à toutes les tailles. À 16 px, le fragment est grossi et
+// l'ouverture élargie pour rester lisibles.
+const svg = (size) => {
+  const small = size <= 16;
+  const C = 64;                       // centre
+  const R = 33;                       // rayon de l'anneau
+  const W = small ? 15 : 11.5;        // épaisseur du trait
+  const GAP_DEG = small ? 88 : 62;    // ouverture, centrée sur le haut-droit
+  const circ = 2 * Math.PI * R;
+  const gapLen = (GAP_DEG / 360) * circ;
+  // Le dash démarre à 3 h et l'ouverture finit le tour, donc son centre est
+  // à -GAP/2 ; on tourne pour l'amener sur le haut-droit (-45°).
+  const rot = -45 + GAP_DEG / 2;
+  // Fragment échappé : dans l'axe de l'ouverture, au-delà de l'anneau.
+  const fragDist = R + (small ? 21 : 16.5);
+  const fx = C + fragDist * Math.cos(-Math.PI / 4);
+  const fy = C + fragDist * Math.sin(-Math.PI / 4);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4a8770"/>
+      <stop offset="1" stop-color="#2e5647"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <circle cx="${C}" cy="${C}" r="${R}"
+    fill="none" stroke="#f2f7f4" stroke-width="${W}" stroke-linecap="round"
+    stroke-dasharray="${(circ - gapLen).toFixed(2)} ${gapLen.toFixed(2)}"
+    transform="rotate(${rot.toFixed(2)} ${C} ${C})"/>
+  <circle cx="${fx.toFixed(2)}" cy="${fy.toFixed(2)}" r="${(W / 2 + 1.5).toFixed(2)}" fill="#f2f7f4"/>
+</svg>`;
+};
+
 const html = (size) => `<!doctype html><style>
   body { margin: 0; background: transparent; }
-  .icon {
-    width: ${size}px; height: ${size}px;
-    background: #3d6b5c;
-    border-radius: ${Math.round(size * 0.22)}px;
-    display: grid; place-items: center;
-  }
-  .ring {
-    width: ${size * 0.52}px; height: ${size * 0.52}px;
-    border: ${Math.max(2, Math.round(size * 0.09))}px solid #eaf3ef;
-    border-radius: 50%;
-    border-bottom-color: transparent;
-    transform: rotate(-45deg) translate(0, ${-size * 0.02}px);
-  }
-</style><div class="icon"><div class="ring"></div></div>`;
+  .icon { width: ${size}px; height: ${size}px; }
+  svg { display: block; }
+</style><div class="icon">${svg(size)}</div>`;
 
 (async () => {
   const iconsDir = path.join(ROOT, 'icons');
