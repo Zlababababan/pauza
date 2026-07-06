@@ -96,6 +96,20 @@ visibilité, gestes) et prévoir dès le départ leur surcharge en environnement
 idéalement comme un réglage produit légitime. Quand un test échoue « à partir d'une
 certaine durée », chercher les seuils temporels de l'environnement.
 
+## 2026-07-06 — Tester les deux polarités d'un affichage conditionnel
+
+**Déclencheur :** un portail de verrouillage s'affichait pour tout le monde, PIN configuré
+ou non. Cause : l'attribut HTML `hidden` (règle UA `[hidden]{display:none}`) était écrasé
+par un `#id { display: grid }` plus spécifique. Le banc E2E vérifiait « le portail
+apparaît quand il doit » mais jamais « il n'apparaît pas quand il ne doit pas » — c'est
+l'utilisateur qui l'a trouvé en dix secondes.
+
+**Règle :** (1) dans toute feuille de style qui pose des `display` explicites sur des
+éléments togglés par `hidden`, ajouter `[hidden]{display:none !important}` d'office ;
+(2) pour chaque UI conditionnelle, écrire les DEUX assertions : visible dans l'état A,
+absente dans l'état B — l'état par défaut (fonctionnalité non configurée) est celui que
+verront 100 % des nouveaux utilisateurs et c'est le moins testé.
+
 ## 2026-07-05 — Un bug rapporté par l'utilisateur cache souvent deux causes
 
 **Déclencheur :** « le blocage ne fonctionne pas » avait deux causes indépendantes

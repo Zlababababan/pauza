@@ -24,6 +24,9 @@
 
 * { box-sizing: border-box; }
 
+/* L'attribut hidden doit gagner même sur nos display explicites (#pin-gate…). */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--bg);

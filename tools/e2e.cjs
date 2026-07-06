@@ -593,6 +593,14 @@ async function pollUrl(page, pred, timeout = 8000) {
     const opt3 = await browser.newPage();
     await opt3.goto(`chrome-extension://${extId}/src/options/options.html`);
     await sleep(600);
+    // Régression (bug Yassin) : sans PIN, le portail ne doit PAS être visible
+    // (l'attribut hidden était écrasé par le display:grid du CSS).
+    const noPinState = await opt3.evaluate(() => ({
+      gateDisplay: getComputedStyle(document.getElementById('pin-gate')).display,
+      mainVisible: !document.querySelector('main').hidden,
+    }));
+    step(noPinState.gateDisplay === 'none' && noPinState.mainVisible,
+      'PIN : sans PIN, pas de portail et page visible', JSON.stringify(noPinState));
     await opt3.click('#discreet-blur');
     await sleep(400);
     await dash.reload();
