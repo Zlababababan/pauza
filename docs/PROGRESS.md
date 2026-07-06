@@ -193,6 +193,24 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 - Reste pour publier : pousser le dépôt sur GitHub (URL privacy), créer le
   compte développeur (5 $), suivre `docs/STORE.md`.
 
+### 2026-07-06 — Dépôt public, licence, kit de soumission
+
+- Ko-fi confirmé par le mainteneur. **Consigne durable : aucune information
+  personnelle nulle part** — contact public `zlababababan@gmail.com`, docs
+  anonymisées (« le mainteneur »), historique git réécrit (auteur pseudonyme,
+  messages nettoyés, sauvegardes purgées) AVANT le premier push.
+- **Licence GPL-3.0** : le copyleft verrouille « gratuit pour toujours, pas de
+  fork fermé avec pub/télémétrie » (même choix qu'uBlock Origin).
+- **Dépôt public** : https://github.com/Zlababababan/pauza (créé via l'API
+  avec le credential GCM existant, compte Zlababababan). Privacy policy en
+  ligne : `docs/PRIVACY.md` sur main.
+- **Kit de soumission** dans `dist/soumission-store/` (ignoré par git, à la
+  demande du mainteneur) : zip 1.0.0, captures FR/EN, fiche à copier-coller,
+  checklist pas-à-pas `1-LISEZMOI.md` (compte dev, listing, privacy,
+  distribution, après-acceptation).
+- Reste : créer le compte développeur (5 $, avec le compte Google pseudonyme)
+  et dérouler la checklist. README anglais après acceptation.
+
 ## Monétisation — pistes retenues
 
 Contraintes posées : extension gratuite pour toujours, jamais encombrante,

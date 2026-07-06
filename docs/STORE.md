@@ -9,8 +9,8 @@ textes ci-dessous respectent la limite (ce sont les mêmes que `_locales`).
 - **Catégorie** : Productivity
 - **Archive** : `node tools/package.cjs` → `dist/pauza-<version>.zip`
 - **Captures** : `node tools/screenshots.cjs` → `dist/screenshots/<langue>/`
-- **Privacy policy** : publier `docs/PRIVACY.md` (GitHub Pages ou dépôt public)
-  et coller l'URL dans l'onglet « Privacy ».
+- **Privacy policy** (en ligne) :
+  `https://github.com/Zlababababan/pauza/blob/main/docs/PRIVACY.md`
 
 ## Onglet Privacy — à remplir en anglais
 
