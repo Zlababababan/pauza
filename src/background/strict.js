@@ -2,68 +2,114 @@
 //
 // C'est un « soft lock » assumé : une extension ne peut pas empêcher sa propre
 // désinstallation, et un utilisateur déterminé peut toujours contourner. Le but
-// est de résister aux impulsions, pas aux experts. La garde s'appuie sur
-// storage.onChanged (oldValue/newValue) : toute modification d'une règle
-// verrouillée pendant que le mode strict est armé est annulée, à une exception
-// près — la gestion de la demande de suppression (création clampée à 24 h,
-// annulation libre). Le désarmement anticipé passe lui aussi par 24 h.
+// est de résister aux impulsions, pas aux experts.
+//
+// La garde compare chaque changement de règles à un MIROIR des règles
+// verrouillées (chrome.storage.session), établi à l'armement et mis à jour aux
+// seules transitions légitimes. Ne PAS utiliser oldValue de storage.onChanged
+// comme référence : après une correction de la garde, l'« ancienne » valeur est
+// la valeur sabotée, et la garde oscillerait en restaurant le sabotage.
 
 import { SEVERITY, STRICT_DELAY_MS } from '../common/constants.js';
 import { getRules, saveRules, getStrict, setStrict } from '../common/storage.js';
 
-const SEVERITY_RANK = {
-  [SEVERITY.OBSERVE]: 0,
-  [SEVERITY.FRICTION]: 1,
-  [SEVERITY.QUOTA]: 2,
-  [SEVERITY.BLOCK]: 3,
-};
-
 /** Champs d'une règle dont le gel est garanti par la garde. */
 function frozen(rule) {
   const { pendingDeleteAt, ...rest } = rule;
-  return JSON.stringify(rest);
+  const sorted = {};
+  for (const key of Object.keys(rest).sort()) sorted[key] = rest[key];
+  return JSON.stringify(sorted);
 }
 
-function pendingDeleteChangeAllowed(oldRule, newRule, now) {
-  if (oldRule.pendingDeleteAt === newRule.pendingDeleteAt) return true;
+function pendingDeleteChangeAllowed(refRule, newRule, now) {
+  if (refRule.pendingDeleteAt === newRule.pendingDeleteAt) return true;
   if (newRule.pendingDeleteAt == null) return true; // annulation : toujours ok
-  if (oldRule.pendingDeleteAt != null) return false; // pas de raccourcissement
+  if (refRule.pendingDeleteAt != null) return false; // pas de raccourcissement
   // Création : au moins ~24 h (petite tolérance d'horloge)
   return newRule.pendingDeleteAt >= now + STRICT_DELAY_MS - 60_000;
 }
 
+async function getShadow() {
+  const { lockedShadow } = await chrome.storage.session.get('lockedShadow');
+  return lockedShadow ?? null;
+}
+
+async function setShadowFrom(rules) {
+  const lockedShadow = Object.fromEntries(
+    rules.filter((r) => r.locked).map((r) => [r.id, r])
+  );
+  await chrome.storage.session.set({ lockedShadow });
+}
+
+/** (Re)prend les règles courantes comme référence — à l'armement et au réveil. */
+export async function reseedShadow() {
+  await setShadowFrom(await getRules());
+}
+
+// Sérialisé : deux événements rapprochés partageant le miroir se corrompraient.
+let queue = Promise.resolve();
+
 /**
- * Vérifie un changement de règles sous mode strict armé. Retourne la liste
- * corrigée si une violation a été annulée, sinon null (rien à corriger).
+ * Vérifie un changement de règles. Retourne la liste corrigée si une violation
+ * a été annulée, sinon null. Hors armement, se contente de suivre l'état.
  */
-export async function checkRulesChange(oldRules, newRules) {
+export function checkRulesChange(newRules) {
+  const run = queue.then(() => doCheck(newRules));
+  queue = run.catch(() => {});
+  return run;
+}
+
+async function doCheck(newRules) {
   const strict = await getStrict();
-  if (!strict.armed || !oldRules) return null;
+  if (!strict.armed) {
+    await setShadowFrom(newRules);
+    return null;
+  }
+  let shadow = await getShadow();
+  if (shadow == null) {
+    // Réveil sans miroir (redémarrage) : l'état courant devient la référence.
+    await setShadowFrom(newRules);
+    return null;
+  }
+
   const now = Date.now();
   const result = [...newRules];
+  const nextShadow = { ...shadow };
   let changed = false;
 
-  for (const oldRule of oldRules) {
-    if (!oldRule.locked) continue;
-    const idx = result.findIndex((r) => r.id === oldRule.id);
+  for (const [id, ref] of Object.entries(shadow)) {
+    const idx = result.findIndex((r) => r.id === id);
     if (idx === -1) {
-      // Suppression directe : refusée sauf si la demande différée est échue.
-      if (oldRule.pendingDeleteAt && oldRule.pendingDeleteAt <= now) continue;
-      result.push(oldRule);
+      // Suppression : légitime seulement si la demande différée est échue.
+      if (ref.pendingDeleteAt && ref.pendingDeleteAt <= now) {
+        delete nextShadow[id];
+        continue;
+      }
+      result.push(ref);
       changed = true;
-    } else if (frozen(result[idx]) !== frozen(oldRule) ||
-               !pendingDeleteChangeAllowed(oldRule, result[idx], now)) {
-      result[idx] = oldRule;
+    } else if (frozen(result[idx]) !== frozen(ref) ||
+               !pendingDeleteChangeAllowed(ref, result[idx], now)) {
+      result[idx] = ref;
       changed = true;
+    } else if (result[idx].pendingDeleteAt !== ref.pendingDeleteAt) {
+      nextShadow[id] = result[idx]; // transition légitime : le miroir suit
     }
   }
+  // Verrouiller davantage est toujours permis : les règles nouvellement
+  // verrouillées entrent au miroir avec leur état courant comme référence.
+  for (const r of result) {
+    if (r.locked && !nextShadow[r.id]) nextShadow[r.id] = r;
+  }
+
+  await chrome.storage.session.set({ lockedShadow: nextShadow });
   return changed ? result : null;
 }
 
 /**
  * Vérifie un changement d'état du mode strict. Un désarmement n'est légitime
  * que si l'échéance (until) ou la demande de désarmement (pendingDisarmAt) est
- * échue. Retourne l'état corrigé si violation, sinon null.
+ * échue. Retourne l'état corrigé si violation, sinon null. (Pas d'oscillation
+ * possible ici : la correction est un réarmement, jamais re-signalé.)
  */
 export function checkStrictChange(oldStrict, newStrict) {
   if (!oldStrict?.armed || newStrict?.armed) return null;

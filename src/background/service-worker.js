@@ -9,7 +9,7 @@ import { rebuildDnrRules } from './dnr.js';
 import { grantAllowance, handleAllowanceAlarm, clearExpiredAllowances, pruneAllowances } from './allowances.js';
 import { initNavigation } from './navigation.js';
 import { initTracking, reevaluate, TICK_ALARM } from './tracking.js';
-import { checkRulesChange, checkStrictChange, applyDueStrictActions, nextStrictDeadline } from './strict.js';
+import { checkRulesChange, checkStrictChange, applyDueStrictActions, nextStrictDeadline, reseedShadow } from './strict.js';
 
 const ENGINE_SYNC_ALARM = 'engine-sync';
 
@@ -44,9 +44,13 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
         await setStrict(fixed);
         return;
       }
+      // Armement : l'état courant des règles devient la référence de la garde.
+      if (changes.strict.newValue?.armed && !changes.strict.oldValue?.armed) {
+        await reseedShadow();
+      }
     }
     if (changes.rules) {
-      const fixed = await checkRulesChange(changes.rules.oldValue, changes.rules.newValue);
+      const fixed = await checkRulesChange(changes.rules.newValue ?? []);
       if (fixed) {
         await saveRules(fixed);
         return;

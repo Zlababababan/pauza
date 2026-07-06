@@ -77,6 +77,10 @@ async function pollUrl(page, pred, timeout = 8000) {
     const worker = await swTarget.worker();
     console.log('Extension chargée, id =', extId);
 
+    // Headless : aucun input utilisateur, l'état idle basculerait à 60 s de
+    // fonctionnement. On élève le seuil pour toute la durée du banc.
+    await worker.evaluate(() => chrome.storage.local.set({ settings: { idleSeconds: 6000 } }));
+
     // --- Règles : une via la page d'options (E2E UI), le reste via storage ---
     const options = await browser.newPage();
     await options.goto(`chrome-extension://${extId}/src/options/options.html`);
@@ -396,6 +400,127 @@ async function pollUrl(page, pred, timeout = 8000) {
     step(pageL2.isClosed() || !leave2.includes('interstitial.html'),
       'Bug 1b : reprendre sans historique -> onglet vierge', leave2);
     await pageL2.close().catch(() => {});
+
+    // --- Phase 5 : i18n dynamique + mode strict (M3) ---
+
+    // i18n : bascule FR -> EN à chaud depuis le popup
+    const pop2 = await browser.newPage();
+    await pop2.goto(`chrome-extension://${extId}/src/popup/popup.html`);
+    await sleep(500);
+    const frLabel = await pop2.$eval('#open-options', (el) => el.textContent);
+    await pop2.select('#lang-switcher', 'en');
+    await sleep(1200); // setLang + location.reload()
+    const enLabel = await pop2.$eval('#open-options', (el) => el.textContent);
+    step(frLabel === 'Gérer mes règles' && enLabel === 'Manage my rules',
+      'i18n : bascule FR -> EN à chaud depuis le popup', `« ${frLabel} » -> « ${enLabel} »`);
+    await worker.evaluate(() => chrome.storage.local.set({ lang: 'fr' }));
+    await pop2.close().catch(() => {});
+
+    // Mode strict : règle verrouillée + armement via l'UI des options
+    await worker.evaluate(async (rule) => {
+      const cur = (await chrome.storage.local.get('rules')).rules ?? [];
+      await chrome.storage.local.set({ rules: [...cur, rule] });
+    }, { ...mkRule('locked-rule', ['locked.test'], 'block'), locked: true, pendingDeleteAt: null });
+    await sleep(400);
+
+    const opt2 = await browser.newPage();
+    await opt2.goto(`chrome-extension://${extId}/src/options/options.html`);
+    await sleep(600);
+    await opt2.$$eval('#strict-actions button', (btns) => btns[0].click()); // Armer 24 h
+    await sleep(600);
+    let strict = await worker.evaluate(async () =>
+      (await chrome.storage.local.get('strict')).strict);
+    step(strict?.armed === true && strict.until > Date.now(),
+      'Strict : armement 24 h via l\'UI des options', JSON.stringify(strict));
+
+    // Sabotage 1 : suppression directe de la règle verrouillée -> restaurée
+    await worker.evaluate(async () => {
+      const { rules } = await chrome.storage.local.get('rules');
+      await chrome.storage.local.set({ rules: rules.filter((r) => r.id !== 'locked-rule') });
+    });
+    await sleep(800);
+    let lockedRule = await worker.evaluate(async () =>
+      ((await chrome.storage.local.get('rules')).rules ?? []).find((r) => r.id === 'locked-rule'));
+    step(!!lockedRule, 'Strict : suppression directe d\'une règle verrouillée -> restaurée');
+
+    // Sabotage 2 : assouplissement (blocage -> friction) -> annulé
+    await worker.evaluate(async () => {
+      const { rules } = await chrome.storage.local.get('rules');
+      rules.find((r) => r.id === 'locked-rule').severity = 'friction';
+      await chrome.storage.local.set({ rules });
+    });
+    await sleep(800);
+    lockedRule = await worker.evaluate(async () =>
+      ((await chrome.storage.local.get('rules')).rules ?? []).find((r) => r.id === 'locked-rule'));
+    step(lockedRule?.severity === 'block',
+      'Strict : assouplissement d\'une règle verrouillée -> annulé', `severity=${lockedRule?.severity}`);
+
+    // Sabotage 3 : demande de suppression raccourcie (échéance dans 1 s) -> annulée
+    await worker.evaluate(async () => {
+      const { rules } = await chrome.storage.local.get('rules');
+      rules.find((r) => r.id === 'locked-rule').pendingDeleteAt = Date.now() + 1000;
+      await chrome.storage.local.set({ rules });
+    });
+    await sleep(800);
+    lockedRule = await worker.evaluate(async () =>
+      ((await chrome.storage.local.get('rules')).rules ?? []).find((r) => r.id === 'locked-rule'));
+    step(lockedRule?.pendingDeleteAt == null,
+      'Strict : échéance de suppression raccourcie -> annulée');
+
+    // Demande de suppression légitime via l'UI -> échéance à ~24 h
+    await opt2.reload();
+    await sleep(600);
+    await opt2.$$eval('.rule-card', (cards) => {
+      const card = cards.find((c) => c.textContent.includes('locked-rule'));
+      card.querySelector('button.danger').click();
+    });
+    await sleep(600);
+    lockedRule = await worker.evaluate(async () =>
+      ((await chrome.storage.local.get('rules')).rules ?? []).find((r) => r.id === 'locked-rule'));
+    const in24h = Math.abs((lockedRule?.pendingDeleteAt ?? 0) - Date.now() - 24 * 3600 * 1000) < 5 * 60 * 1000;
+    step(in24h, 'Strict : demande de suppression via l\'UI -> échéance à ~24 h',
+      lockedRule?.pendingDeleteAt ? new Date(lockedRule.pendingDeleteAt).toISOString() : 'absente');
+
+    // Sabotage 4 : désarmement direct -> annulé (l'échéance n'est pas atteinte)
+    await worker.evaluate(() =>
+      chrome.storage.local.set({ strict: { armed: false, until: null, pendingDisarmAt: null } }));
+    await sleep(800);
+    strict = await worker.evaluate(async () =>
+      (await chrome.storage.local.get('strict')).strict);
+    step(strict?.armed === true, 'Strict : désarmement direct -> annulé', JSON.stringify(strict));
+
+    // Armement à échéance courte : l'échéance passée est appliquée au prochain sync
+    await worker.evaluate(() =>
+      chrome.storage.local.set({ strict: { armed: true, until: Date.now() + 1500, pendingDisarmAt: null } }));
+    await sleep(2500);
+    // Un changement quelconque déclenche syncEngine -> échéances appliquées
+    await worker.evaluate(async (rule) => {
+      const cur = (await chrome.storage.local.get('rules')).rules ?? [];
+      await chrome.storage.local.set({ rules: [...cur, rule] });
+    }, mkRule('dummy-sync', ['dummy-sync.test'], 'observe'));
+    await sleep(800);
+    strict = await worker.evaluate(async () =>
+      (await chrome.storage.local.get('strict')).strict);
+    step(strict?.armed === false, 'Strict : échéance d\'armement passée -> désarmé au sync', JSON.stringify(strict));
+
+    // Mode strict désarmé : la suppression différée échue s'exécute
+    await worker.evaluate(async () => {
+      const { rules } = await chrome.storage.local.get('rules');
+      rules.find((r) => r.id === 'locked-rule').pendingDeleteAt = Date.now() - 1000;
+      await chrome.storage.local.set({ rules });
+    });
+    await sleep(800);
+    lockedRule = await worker.evaluate(async () =>
+      ((await chrome.storage.local.get('rules')).rules ?? []).find((r) => r.id === 'locked-rule'));
+    step(!lockedRule, 'Strict : suppression différée échue -> exécutée');
+
+    // Statut incognito affiché dans la section strict (environnement de test : non autorisé)
+    await opt2.reload();
+    await sleep(600);
+    const incog = await opt2.$eval('#incognito-status', (el) => el.textContent);
+    await opt2.screenshot({ path: path.join(OUT_DIR, 'options-strict.png'), fullPage: true });
+    step(incog.length > 0, 'Strict : statut navigation privée affiché', incog.slice(0, 80));
+    await opt2.close().catch(() => {});
   } finally {
     await browser.close();
     server.close();

@@ -13,8 +13,15 @@ import { getRules, addUsage, getUsageToday, isQuotaExhausted, recordStat } from 
 import { initI18n, t } from '../common/i18n.js';
 
 export const TICK_ALARM = 'quota-tick';
-const IDLE_SECONDS = 60;
 const WARN_REMAINING_MIN = 5;
+
+// Seuil d'inactivité (secondes). Surchargable via settings.idleSeconds —
+// sert aussi au banc E2E : en headless il n'y a jamais d'input utilisateur,
+// donc l'état passerait à 'idle' 60 s après le lancement.
+async function idleSeconds() {
+  const { settings } = await chrome.storage.local.get('settings');
+  return Math.max(15, settings?.idleSeconds ?? 60);
+}
 
 // Prévenir l'épuisement déclenche une recompilation DNR : injecté par le
 // service worker pour éviter un import circulaire.
@@ -28,7 +35,7 @@ export function initTracking(syncEngineFn) {
   });
   chrome.tabs.onRemoved.addListener(() => reevaluate());
   chrome.windows.onFocusChanged.addListener(() => reevaluate());
-  chrome.idle.setDetectionInterval(IDLE_SECONDS);
+  chrome.idle.setDetectionInterval(60);
   chrome.idle.onStateChanged.addListener(() => reevaluate());
 }
 
@@ -70,7 +77,7 @@ async function doReevaluate() {
 async function currentQuotaContext() {
   const win = await chrome.windows.getLastFocused().catch(() => null);
   if (!win?.focused) return null;
-  if ((await chrome.idle.queryState(IDLE_SECONDS)) !== 'active') return null;
+  if ((await chrome.idle.queryState(await idleSeconds())) !== 'active') return null;
   const [tab] = await chrome.tabs.query({ active: true, windowId: win.id });
   if (!tab?.url) return null;
 
