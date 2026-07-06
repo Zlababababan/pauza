@@ -211,6 +211,16 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 - Reste : créer le compte développeur (5 $, avec le compte Google pseudonyme)
   et dérouler la checklist. README anglais après acceptation.
 
+### 2026-07-07 — Soumise au Chrome Web Store 🎉
+
+- Pauza 1.0.0 soumise à la revue par le mainteneur (compte développeur
+  pseudonyme, statut non professionnel, catégorie Workflows/planification,
+  captures internationales EN + localisées FR). Piège corrigé au passage :
+  le zip bsdtar était un tar déguisé — packaging réécrit en pur Node.
+- En attente du verdict (1 à 3 jours ouvrés, possiblement plus avec
+  `<all_urls>`). Après acceptation : lien store dans le README, README
+  anglais, puis port Firefox/AMO.
+
 ## Monétisation — pistes retenues
 
 Contraintes posées : extension gratuite pour toujours, jamais encombrante,
