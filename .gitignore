@@ -6,3 +6,4 @@ Thumbs.db
 .chrome/
 package-lock.json
 tools/*.png
+dist/
