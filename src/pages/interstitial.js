@@ -5,7 +5,7 @@
 // encodée), le suivi SPA l'encode — on parse donc positionnellement.
 
 import { MSG, DEFAULTS } from '../common/constants.js';
-import { getRule } from '../common/storage.js';
+import { getRule, getPanic, isPanicActive } from '../common/storage.js';
 import { nextActiveTime } from '../common/schedule.js';
 import { initI18n, t, applyI18n, fillWithHost, dateLocale } from '../common/i18n.js';
 
@@ -84,7 +84,7 @@ async function init() {
 
   chrome.runtime.sendMessage({ type: MSG.INTERSTITIAL_SHOWN, ruleId, mode });
 
-  const isBlocking = mode === 'block' || mode === 'quota' || mode === 'offhours';
+  const isBlocking = mode === 'block' || mode === 'quota' || mode === 'offhours' || mode === 'panic';
   $('badge').textContent = t(`badge_${isBlocking ? mode : 'friction'}`);
   document.title = t(isBlocking ? `${mode}_title` : 'friction_title');
 
@@ -98,6 +98,17 @@ async function init() {
       }));
     }
     $('note').textContent = t('note_offhours');
+  } else if (mode === 'panic') {
+    $('title').textContent = t('panic_title');
+    fillWithHost($('subtitle'), 'panic_sub', host, { rule: ruleSuffix });
+    const panic = await getPanic();
+    if (isPanicActive(panic)) {
+      $('subtitle').append(t('panic_until', {
+        when: new Date(panic.until).toLocaleTimeString(dateLocale(),
+          { hour: '2-digit', minute: '2-digit' }),
+      }));
+    }
+    $('note').textContent = t('note_panic');
   } else if (mode === 'quota') {
     $('title').textContent = t('quota_title');
     fillWithHost($('subtitle'), rule?.quotaMinutes ? 'quota_sub' : 'quota_sub_nomin', host,

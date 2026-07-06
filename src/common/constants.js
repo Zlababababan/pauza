@@ -30,6 +30,7 @@ export const DNR = {
   PRIORITY_FRICTION: 1,
   PRIORITY_ALLOW: 100,
   PRIORITY_BLOCK: 200,
+  PRIORITY_PANIC: 300, // le bouton panique outrepasse tout, allowances comprises
 };
 
 export const ALARM_ALLOWANCE_PREFIX = 'allowance:';
@@ -47,3 +48,8 @@ export const SUPPORT_LINKS = {
 // Mode strict : délai imposé aux demandes de suppression/désarmement.
 export const STRICT_DELAY_MS = 24 * 3600 * 1000;
 export const ALARM_STRICT = 'strict-sync';
+
+// Bouton panique : blocage de toutes les cibles suivies, non annulable,
+// expiration automatique.
+export const PANIC_DURATION_MS = 3600 * 1000;
+export const ALARM_PANIC = 'panic-end';

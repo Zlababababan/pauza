@@ -102,6 +102,23 @@ export function isQuotaExhausted(rule, usageToday) {
   return (usageToday[rule.id] ?? 0) >= rule.quotaMinutes * 60;
 }
 
+// --- Mode panique : { until: ts | null } ---
+// `until` n'est pas nettoyé à l'expiration (personne n'est forcément réveillé
+// pile à ce moment) : c'est isPanicActive qui fait foi, partout.
+
+export async function getPanic() {
+  const { panic } = await chrome.storage.local.get('panic');
+  return panic ?? { until: null };
+}
+
+export function isPanicActive(panic, now = Date.now()) {
+  return Boolean(panic?.until) && panic.until > now;
+}
+
+export async function setPanic(panic) {
+  await chrome.storage.local.set({ panic });
+}
+
 // --- Mode strict ---
 // { armed, until (ts|null = permanent), pendingDisarmAt (ts|null) }
 

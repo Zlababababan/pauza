@@ -6,13 +6,13 @@
 import { SEVERITY, BLOCK_ACTION } from '../common/constants.js';
 import { parsedTargets, urlMatchesTarget, targetKey } from '../common/matching.js';
 import { isRuleActiveNow } from '../common/schedule.js';
-import { getRules, recordStat, getUsageToday } from '../common/storage.js';
+import { getRules, recordStat, getUsageToday, getPanic, isPanicActive } from '../common/storage.js';
 import { effectiveMode } from './dnr.js';
 import { isAllowed } from './allowances.js';
 
 // Préséance quand plusieurs règles matchent : la plus stricte gagne
 // (même hiérarchie que les priorités DNR).
-const MODE_RANK = { friction: 1, quota: 2, offhours: 3, block: 4 };
+const MODE_RANK = { friction: 1, quota: 2, offhours: 3, block: 4, panic: 5 };
 
 // État par onglet : cibles actuellement matchées, pour ne compter "observer"
 // qu'à l'entrée. En mémoire : perdu si le service worker redémarre, ce qui
@@ -43,6 +43,7 @@ async function handleNavigation({ tabId, frameId, url }) {
 
   const rules = await getRules();
   const usageToday = await getUsageToday();
+  const panic = isPanicActive(await getPanic());
   const now = new Date();
   const previous = tabMatches.get(tabId) ?? new Set();
   const current = new Set();
@@ -50,15 +51,17 @@ async function handleNavigation({ tabId, frameId, url }) {
   let enforceMode = null;
 
   for (const rule of rules) {
-    if (rule.enabled === false) continue;
+    // Pendant la panique, même les règles suspendues bloquent leurs cibles.
+    const suspended = rule.enabled === false;
+    if (suspended && !panic) continue;
     for (const target of parsedTargets(rule)) {
       if (!urlMatchesTarget(u, target)) continue;
       const key = `${rule.id}|${targetKey(target)}`;
       current.add(key);
-      if (rule.severity === SEVERITY.OBSERVE && isRuleActiveNow(rule, now) && !previous.has(key)) {
+      if (!suspended && rule.severity === SEVERITY.OBSERVE && isRuleActiveNow(rule, now) && !previous.has(key)) {
         recordStat(rule.id, 'observed');
       }
-      const mode = effectiveMode(rule, usageToday, now);
+      const mode = panic ? 'panic' : effectiveMode(rule, usageToday, now);
       if (mode && (!enforceMode || MODE_RANK[mode] > MODE_RANK[enforceMode])) {
         enforce = rule;
         enforceMode = mode;
@@ -72,7 +75,9 @@ async function handleNavigation({ tabId, frameId, url }) {
   if (enforceMode === 'friction' && (await isAllowed(u))) return;
 
   // Navigation SPA/bfcache passée sous le radar du DNR : on applique la règle ici.
-  if (enforceMode !== 'friction' && enforce.blockAction === BLOCK_ACTION.CLOSE_TAB) {
+  // La panique passe toujours par l'interstitiel, jamais par la fermeture.
+  if (enforceMode !== 'friction' && enforceMode !== 'panic' &&
+      enforce.blockAction === BLOCK_ACTION.CLOSE_TAB) {
     recordStat(enforce.id, 'blocked');
     chrome.tabs.remove(tabId).catch(() => {});
     return;

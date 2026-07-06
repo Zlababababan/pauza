@@ -7,7 +7,7 @@
 import { SEVERITY, BLOCK_ACTION, DNR } from '../common/constants.js';
 import { parsedTargets, targetToRegexFilter } from '../common/matching.js';
 import { isScheduleActive } from '../common/schedule.js';
-import { getUsageToday, isQuotaExhausted } from '../common/storage.js';
+import { getUsageToday, isQuotaExhausted, getPanic, isPanicActive } from '../common/storage.js';
 
 /**
  * Comportement effectif d'une règle à cet instant : 'friction', 'block',
@@ -46,14 +46,11 @@ function redirectPrefix(rule, mode) {
  */
 export async function rebuildDnrRules(rules) {
   const usageToday = await getUsageToday();
+  const panic = isPanicActive(await getPanic());
   const now = new Date();
   const addRules = [];
   let id = DNR.DYNAMIC_RULE_BASE;
-  for (const rule of rules) {
-    const mode = effectiveMode(rule, usageToday, now);
-    if (!mode) continue;
-    const prefix = redirectPrefix(rule, mode);
-    const priority = mode === 'friction' ? DNR.PRIORITY_FRICTION : DNR.PRIORITY_BLOCK;
+  const compile = (rule, mode, prefix, priority) => {
     for (const target of parsedTargets(rule)) {
       addRules.push({
         id: id++,
@@ -69,6 +66,21 @@ export async function rebuildDnrRules(rules) {
         },
       });
     }
+  };
+  for (const rule of rules) {
+    // Panique : toutes les cibles suivies sont bloquées, règles suspendues
+    // comprises — toujours vers l'interstitiel (jamais de fermeture d'onglet).
+    // Les règles normales restent compilées : la priorité 300 tranche pendant
+    // la panique, et elles reprennent la main dès la recompilation d'expiration.
+    if (panic) {
+      const prefix = chrome.runtime.getURL('src/pages/interstitial.html') +
+        `?rid=${rule.id}&mode=panic&u=`;
+      compile(rule, 'panic', prefix, DNR.PRIORITY_PANIC);
+    }
+    const mode = effectiveMode(rule, usageToday, now);
+    if (!mode) continue;
+    compile(rule, mode, redirectPrefix(rule, mode),
+      mode === 'friction' ? DNR.PRIORITY_FRICTION : DNR.PRIORITY_BLOCK);
   }
   const existing = await chrome.declarativeNetRequest.getDynamicRules();
   await chrome.declarativeNetRequest.updateDynamicRules({

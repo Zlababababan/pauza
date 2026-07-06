@@ -1,8 +1,8 @@
 // Service worker : câble le moteur DNR, le suivi de navigation, les allowances,
 // le suivi du temps actif (quotas) et les messages des pages de l'extension.
 
-import { MSG, ALARM_STRICT } from '../common/constants.js';
-import { getRules, getRule, recordStat, saveRules, setStrict } from '../common/storage.js';
+import { MSG, ALARM_STRICT, ALARM_PANIC } from '../common/constants.js';
+import { getRules, getRule, recordStat, saveRules, setStrict, getPanic, isPanicActive } from '../common/storage.js';
 import { matchingTarget, parseTarget } from '../common/matching.js';
 import { nextEngineBoundary } from '../common/schedule.js';
 import { rebuildDnrRules } from './dnr.js';
@@ -27,6 +27,28 @@ async function syncEngine() {
   const strictDeadline = await nextStrictDeadline();
   if (strictDeadline) chrome.alarms.create(ALARM_STRICT, { when: strictDeadline });
   else chrome.alarms.clear(ALARM_STRICT);
+  // Fin de panique : une recompilation pile à l'échéance rend leurs cibles
+  // aux règles normales (isPanicActive fera foi, même si l'alarme dérive).
+  const panic = await getPanic();
+  if (isPanicActive(panic)) chrome.alarms.create(ALARM_PANIC, { when: panic.until });
+  else chrome.alarms.clear(ALARM_PANIC);
+}
+
+/**
+ * Panique déclenchée : les onglets déjà ouverts sur une cible suivie partent
+ * vers l'interstitiel — même logique que l'épuisement d'un quota.
+ */
+async function sweepPanicTabs() {
+  const rules = await getRules();
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    if (!tab.url) continue;
+    const rule = rules.find((r) => matchingTarget(tab.url, r));
+    if (!rule) continue;
+    const dest = chrome.runtime.getURL('src/pages/interstitial.html') +
+      `?rid=${rule.id}&mode=panic&u=` + encodeURIComponent(tab.url);
+    chrome.tabs.update(tab.id, { url: dest }).catch(() => {});
+  }
 }
 
 chrome.runtime.onInstalled.addListener(() => { syncEngine(); reevaluate(); });
@@ -56,9 +78,12 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
         return;
       }
     }
-    if (changes.rules || changes.strict) {
+    if (changes.rules || changes.strict || changes.panic) {
       await syncEngine();
       reevaluate();
+    }
+    if (changes.panic && isPanicActive(changes.panic.newValue)) {
+      await sweepPanicTabs();
     }
   } catch (e) {
     console.error('storage.onChanged', e);
@@ -66,7 +91,7 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === ENGINE_SYNC_ALARM || alarm.name === ALARM_STRICT) {
+  if (alarm.name === ENGINE_SYNC_ALARM || alarm.name === ALARM_STRICT || alarm.name === ALARM_PANIC) {
     syncEngine().catch((e) => console.error('syncEngine', e));
     reevaluate();
   } else if (alarm.name === TICK_ALARM) {

@@ -104,6 +104,37 @@ footer .support a:hover { color: var(--accent); }
 }
 .dash-link:hover { color: var(--accent); }
 
+/* Bouton panique : discret (contour) tant qu'on ne s'en sert pas. */
+.panic { padding: 0 12px; margin-bottom: 4px; }
+.panic button {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.panic button:hover { border-color: var(--accent); color: var(--accent); }
+.panic-question { margin: 2px 0 8px; font-size: 12px; color: var(--muted); }
+.panic-choices { display: flex; gap: 8px; }
+.panic button.panic-yes {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.panic-banner {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+}
+
 .strict-banner {
   margin: 0 12px 8px;
   padding: 6px 10px;
