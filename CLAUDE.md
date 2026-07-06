@@ -1,4 +1,4 @@
-# Décroche — instructions projet
+# Pauza — instructions projet
 
 Extension Chrome MV3 « compagnon de sevrage » : conception dans `docs/DESIGN.md`,
 avancement et décisions dans `docs/PROGRESS.md` (à tenir à jour à chaque session),

@@ -1,9 +1,9 @@
 ---
 name: verify
-description: Vérifie l'extension Décroche en conditions réelles — Chrome for Testing headless piloté par puppeteer-core, flux friction/blocage/SPA déroulés de bout en bout.
+description: Vérifie l'extension Pauza en conditions réelles — Chrome for Testing headless piloté par puppeteer-core, flux friction/blocage/SPA déroulés de bout en bout.
 ---
 
-# Vérifier l'extension Décroche
+# Vérifier l'extension Pauza
 
 ## Recette qui marche
 

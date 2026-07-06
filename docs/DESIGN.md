@@ -1,4 +1,4 @@
-# Décroche — Conception
+# Pauza — Conception
 
 ## Vision
 

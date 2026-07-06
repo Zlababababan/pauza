@@ -25,7 +25,7 @@ export async function installPinGate() {
   const card = document.createElement('div');
   card.className = 'gate-card';
   const h1 = document.createElement('h1');
-  h1.textContent = 'Décroche';
+  h1.textContent = 'Pauza';
   const prompt = document.createElement('p');
   prompt.textContent = t('pin_gate_prompt');
   const form = document.createElement('form');

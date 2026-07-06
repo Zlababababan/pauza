@@ -28,7 +28,7 @@ const CHROME = findChrome();
 const PORT = 8123;
 
 // Captures d'écran : hors du dépôt (surchargable via E2E_OUT).
-const OUT_DIR = process.env.E2E_OUT ?? path.join(os.tmpdir(), 'decroche-e2e-out');
+const OUT_DIR = process.env.E2E_OUT ?? path.join(os.tmpdir(), 'pauza-e2e-out');
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
 const results = [];
@@ -56,7 +56,7 @@ async function pollUrl(page, pred, timeout = 8000) {
   });
   await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
 
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'decroche-e2e-'));
+  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pauza-e2e-'));
   const browser = await puppeteer.launch({
     executablePath: CHROME,
     headless: 'new',

@@ -1,4 +1,4 @@
-# Décroche — Suivi du développement
+# Pauza — Suivi du développement
 
 Journal d'avancement du projet. Une entrée par session de travail ; les décisions
 notables sont consignées pour ne pas avoir à les re-déduire du code.
@@ -134,6 +134,24 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
   une allowance plus tôt dans le banc.
 - Liens de soutien : toujours en attente des URLs Ko-fi/PayPal de Yassin
   (`SUPPORT_LINKS` prêt dans `src/common/constants.js`).
+
+### 2026-07-06 — Retours M5 : catégories internationales, renommage en Pauza
+
+- **Catégories enrichies** (retour Yassin) : ajout d'une quarantaine de sites
+  internationaux (VK, Weibo, Douyin, Bilibili, Hulu, Max, Guardian, Spiegel,
+  El País, Al Jazeera, Alibaba, Walmart, MercadoLibre, 888, William Hill,
+  DraftKings, 1xBet…). Les listes restent « majors d'abord », complétables
+  règle par règle.
+- **Renommage : Décroche → Pauza** (décision Yassin, objectif diffusion
+  internationale). « Décroche » : accent intapable hors AZERTY, sens opaque
+  hors francophonie ; « Unhook » (traduction littérale) déjà pris par une
+  extension YouTube connue, « Pausa » déjà pris (overlay de respiration pour
+  ChatGPT). « Pauza » : pause en polonais/tchèque/croate/roumain/serbe,
+  transparent dans les autres langues, aucune collision trouvée sur le Web
+  Store (vérifié par Yassin). Renommé partout (manifest, UI, locales, docs,
+  slugs internes) ; le dossier du dépôt garde son nom.
+- À la publication : fiche store EN par défaut + localisation FR (`_locales`
+  pour le nom/description du manifest), README en anglais, port Firefox/AMO.
 
 ## Monétisation — pistes retenues
 

@@ -45,7 +45,7 @@ export const en = {
   // Popup
   popup_empty: 'No active rules. Start by adding one — even just to observe.',
   popup_manage: 'Manage my rules',
-  popup_support: 'Support Décroche ♥',
+  popup_support: 'Support Pauza ♥',
   stat_visits: '{n} visit',
   stat_visits_plural: '{n} visits',
   stat_pauses: '{n} pause',
@@ -142,7 +142,7 @@ export const en = {
   strict_incognito_open: 'Open extension settings',
 
   // Support
-  support_line: 'Décroche is free and will stay free. If it helps you:',
+  support_line: 'Pauza is free and will stay free. If it helps you:',
   support_kofi: 'Support on Ko-fi ☕',
   support_paypal: 'via PayPal',
 

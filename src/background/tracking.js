@@ -134,7 +134,7 @@ async function maybeWarn(rule, usage) {
   chrome.notifications.create({
     type: 'basic',
     iconUrl: '/icons/icon128.png',
-    title: 'Décroche',
+    title: 'Pauza',
     message: t('notif_quota_warning', {
       min: Math.max(1, Math.round(remainingMin)),
       name: ruleDisplayName(rule),

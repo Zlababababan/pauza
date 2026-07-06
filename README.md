@@ -1,4 +1,4 @@
-# Décroche
+# Pauza
 
 Extension Chrome (Manifest V3) — un compagnon de sevrage configurable, pas un simple
 bloqueur. Un spectre de sévérité réglable par site : observer, freiner, limiter, bloquer.

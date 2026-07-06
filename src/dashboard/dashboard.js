@@ -172,7 +172,7 @@ async function render() {
 
 initI18n().then(() => {
   applyI18n();
-  document.title = `Décroche — ${t('dashboard_title')}`;
+  document.title = `Pauza — ${t('dashboard_title')}`;
   render();
   installPinGate();
 });

@@ -41,7 +41,7 @@ async function closeTab() {
 // « Reprendre où j'en étais » : le retour arrière peut ramener sur une page
 // elle-même bloquée (rebond immédiat vers un nouvel interstitiel) ou ne mener
 // nulle part. Dans les deux cas : repli vers un onglet vierge.
-const LEAVE_FLAG = 'decroche-leaving';
+const LEAVE_FLAG = 'pauza-leaving';
 
 async function goNeutral() {
   const tab = await chrome.tabs.getCurrent();
