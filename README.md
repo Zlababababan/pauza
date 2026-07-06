@@ -48,3 +48,5 @@ docs/            # conception
 - [x] **i18n FR/EN** dynamique (avancée depuis M5)
 - [x] **M4 — Stats et streaks** (tableau de bord, mode discret)
 - [x] **M5 — Finitions** (catégories prédéfinies, bouton panique, icônes définitives)
+- [x] **1.0.0** — 7 langues, lien Ko-fi, packaging store (`tools/package.cjs`),
+      fiche et privacy policy prêtes (`docs/STORE.md`, `docs/PRIVACY.md`)

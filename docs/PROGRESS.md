@@ -167,6 +167,32 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
   Limite connue : Windows affiche les emoji drapeaux en paires de lettres
   (« FR », « GB ») — rendu correct sur macOS/Linux/Android.
 
+### 2026-07-06 — Préparation 1.0.0 (Chrome Web Store)
+
+- M4 + M5 validés par Yassin (correctifs éventuels différés).
+- **Manifest 1.0.0** : description localisée via `_locales` (mécanisme Chrome,
+  indépendant de l'i18n maison — il pilote chrome://extensions et la fiche
+  store), `default_locale: en` comme demandé (anglais par défaut, tout
+  traduit). 8 dossiers : en, fr, es, de, it, pl, pt_BR, pt_PT (« pt » nu
+  n'est pas une locale Chrome valide). Limite : 132 caractères.
+- **`docs/PRIVACY.md`** (EN + FR) : zéro collecte, tout local, permissions
+  justifiées. À publier en ligne (le store exige une URL) — le dépôt n'a pas
+  encore de remote GitHub, c'est le préalable.
+- **`docs/STORE.md`** : fiche complète à copier-coller — résumé + description
+  en 7 langues, single purpose et justifications de permissions en anglais,
+  déclaration « ne collecte aucune donnée ».
+- **`tools/package.cjs`** : zip store propre (manifest, src, icons, _locales
+  — 240 Ko), via bsdtar (Compress-Archive produit des archives non standard ;
+  piège : un chemin absolu Windows « D:\… » est lu par bsdtar comme un hôte
+  distant, d'où chemins relatifs + cwd).
+- **`tools/screenshots.cjs`** : 4 captures 1280×800 par langue (FR, EN) avec
+  données de démo — options, tableau de bord, popup mis en scène,
+  interstitiel.
+- Banc : 46 tests unitaires, E2E 62/62 (l'extension charge avec le manifest
+  localisé).
+- Reste pour publier : pousser le dépôt sur GitHub (URL privacy), créer le
+  compte développeur (5 $), suivre `docs/STORE.md`.
+
 ## Monétisation — pistes retenues
 
 Contraintes posées : extension gratuite pour toujours, jamais encombrante,
