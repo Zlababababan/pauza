@@ -4,6 +4,7 @@
 
 import { fr } from './locales/fr.js';
 import { en } from './locales/en.js';
+import { categoryId } from './categories.js';
 
 const DICTS = { fr, en };
 export const AVAILABLE_LANGS = [
@@ -76,6 +77,17 @@ export function fillWithHost(el, key, host, params = {}) {
     }
     el.append(part);
   });
+}
+
+/**
+ * Nom affichable d'une règle : son nom, sinon sa première cible — traduite
+ * si c'est un jeton de catégorie ("@social" → « Réseaux sociaux »).
+ */
+export function ruleDisplayName(rule) {
+  if (rule.name) return rule.name;
+  const first = rule.targets?.[0] ?? '';
+  const cat = categoryId(first);
+  return cat ? t('cat_' + cat) : first;
 }
 
 /** Locale BCP-47 pour les formats de date/heure. */

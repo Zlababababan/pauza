@@ -5,7 +5,7 @@
 import { SEVERITY } from '../common/constants.js';
 import { getRules, getStats, getUsage, getSettings } from '../common/storage.js';
 import { computeStreaks, listDayKeys } from '../common/streaks.js';
-import { initI18n, t, applyI18n, dateLocale } from '../common/i18n.js';
+import { initI18n, t, applyI18n, dateLocale, ruleDisplayName } from '../common/i18n.js';
 import { installPinGate } from '../common/pin-gate.js';
 
 const DAYS_SHOWN = 14;
@@ -57,7 +57,7 @@ function ruleCard(rule, stats, usage, dayKeys, discreet) {
   title.className = 'rule-title';
   const name = document.createElement('span');
   name.className = 'site-name' + (discreet ? ' blurred' : '');
-  name.textContent = rule.name || rule.targets[0];
+  name.textContent = ruleDisplayName(rule);
   if (discreet) {
     name.title = t('discreet_blur_hint');
     name.addEventListener('click', () => name.classList.toggle('revealed'));
@@ -81,7 +81,7 @@ function ruleCard(rule, stats, usage, dayKeys, discreet) {
   chart.className = 'chart';
   chart.setAttribute('role', 'img');
   chart.setAttribute('aria-label',
-    `${rule.name || rule.targets[0]} — ${t(metric.label)}, ${t('dashboard_subtitle')}`);
+    `${ruleDisplayName(rule)} — ${t(metric.label)}, ${t('dashboard_subtitle')}`);
 
   dayKeys.forEach((key, i) => {
     const col = document.createElement('div');

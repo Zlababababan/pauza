@@ -138,6 +138,21 @@ button.primary {
 button.primary:hover { filter: brightness(1.08); }
 
 .error { color: var(--danger); font-size: 13px; margin: 6px 0 0; }
+
+/* Chips de catégories prédéfinies */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.chip {
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+}
+.chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
 .empty { color: var(--muted); font-size: 14px; margin: 0; }
 
 /* Cartes de règles */

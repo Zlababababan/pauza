@@ -4,8 +4,9 @@
 
 import { SEVERITY, BLOCK_ACTION, DEFAULTS, SUPPORT_LINKS, STRICT_DELAY_MS } from '../common/constants.js';
 import { getRules, saveRules, getStrict, setStrict, getSettings, patchSettings } from '../common/storage.js';
-import { parseTarget } from '../common/matching.js';
-import { initI18n, t, applyI18n, bindLangSwitcher, dateLocale } from '../common/i18n.js';
+import { isValidTargetLine } from '../common/matching.js';
+import { CATEGORIES, categoryId } from '../common/categories.js';
+import { initI18n, t, applyI18n, bindLangSwitcher, dateLocale, ruleDisplayName } from '../common/i18n.js';
 import { installPinGate, sha256Hex } from '../common/pin-gate.js';
 
 const $ = (id) => document.getElementById(id);
@@ -31,6 +32,48 @@ function refreshSubOptions() {
 document.querySelectorAll('input[name="severity"]').forEach((r) =>
   r.addEventListener('change', refreshSubOptions)
 );
+
+// --- Catégories prédéfinies ---
+// Une chip active = un jeton "@id" présent dans le textarea des cibles. Le
+// textarea reste la source de vérité : les chips ne font qu'ajouter/retirer
+// la ligne, et se resynchronisent à chaque saisie.
+
+function targetLines() {
+  return $('targets').value.split('\n').map((l) => l.trim()).filter(Boolean);
+}
+
+function syncCategoryChips() {
+  const active = new Set(targetLines().map(categoryId).filter(Boolean));
+  for (const chip of $('category-chips').children) {
+    chip.classList.toggle('active', active.has(chip.dataset.cat));
+  }
+}
+
+function buildCategoryChips() {
+  for (const id of Object.keys(CATEGORIES)) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip';
+    chip.dataset.cat = id;
+    chip.textContent = t('cat_' + id);
+    chip.title = '@' + id + ' — ' + CATEGORIES[id].join(', ');
+    chip.addEventListener('click', () => {
+      const lines = targetLines();
+      const without = lines.filter((l) => categoryId(l) !== id);
+      if (without.length === lines.length) without.push('@' + id);
+      $('targets').value = without.join('\n');
+      syncCategoryChips();
+    });
+    $('category-chips').append(chip);
+  }
+  $('targets').addEventListener('input', syncCategoryChips);
+}
+
+/** Affichage d'une cible : les jetons de catégorie prennent leur nom traduit. */
+function displayTarget(raw) {
+  const cat = categoryId(raw);
+  return cat ? '@ ' + t('cat_' + cat) : raw;
+}
 
 // --- Horaires ---
 
@@ -79,8 +122,8 @@ $('add-form').addEventListener('submit', async (e) => {
   const errorEl = $('targets-error');
   errorEl.hidden = true;
 
-  const lines = $('targets').value.split('\n').map((l) => l.trim()).filter(Boolean);
-  const invalid = lines.filter((l) => !parseTarget(l));
+  const lines = targetLines();
+  const invalid = lines.filter((l) => !isValidTargetLine(l));
   if (!lines.length || invalid.length) {
     errorEl.textContent = invalid.length
       ? t('options_error_invalid', { targets: invalid.join(', ') })
@@ -116,6 +159,7 @@ $('add-form').addEventListener('submit', async (e) => {
   e.target.reset();
   $('schedule-fields').hidden = true;
   refreshSubOptions();
+  syncCategoryChips();
   render();
 });
 
@@ -147,7 +191,7 @@ function ruleCard(rule, strict, discreet) {
   title.className = 'rule-title';
   const siteName = document.createElement('span');
   siteName.className = 'site-name';
-  siteName.textContent = rule.name || rule.targets[0];
+  siteName.textContent = ruleDisplayName(rule);
   title.append(blurable(siteName, discreet));
   const badge = document.createElement('span');
   badge.className = `sev-badge ${rule.severity}`;
@@ -162,7 +206,11 @@ function ruleCard(rule, strict, discreet) {
 
   const targets = document.createElement('p');
   targets.className = 'rule-targets';
-  targets.textContent = rule.targets.join(' · ');
+  targets.textContent = rule.targets.map(displayTarget).join(' · ');
+  const cats = rule.targets.map(categoryId).filter(Boolean);
+  if (cats.length) {
+    targets.title = cats.map((c) => `${t('cat_' + c)} : ${CATEGORIES[c].join(', ')}`).join('\n');
+  }
 
   main.append(title, blurable(targets, discreet));
 
@@ -395,6 +443,7 @@ initI18n().then(() => {
   applyI18n();
   bindLangSwitcher($('lang-switcher'));
   buildDayChips();
+  buildCategoryChips();
   refreshSubOptions();
   renderSupport();
   renderDiscreet();

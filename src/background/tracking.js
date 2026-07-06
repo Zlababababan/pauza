@@ -10,7 +10,7 @@ import { SEVERITY, BLOCK_ACTION } from '../common/constants.js';
 import { matchingTarget } from '../common/matching.js';
 import { isRuleActiveNow } from '../common/schedule.js';
 import { getRules, addUsage, getUsageToday, isQuotaExhausted, recordStat } from '../common/storage.js';
-import { initI18n, t } from '../common/i18n.js';
+import { initI18n, t, ruleDisplayName } from '../common/i18n.js';
 
 export const TICK_ALARM = 'quota-tick';
 const WARN_REMAINING_MIN = 5;
@@ -137,7 +137,7 @@ async function maybeWarn(rule, usage) {
     title: 'Décroche',
     message: t('notif_quota_warning', {
       min: Math.max(1, Math.round(remainingMin)),
-      name: rule.name || rule.targets[0],
+      name: ruleDisplayName(rule),
     }),
     silent: true,
   });

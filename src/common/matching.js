@@ -1,6 +1,8 @@
 // Matching d'URL pur (sans API Chrome) : partagé entre le moteur DNR,
 // le suivi de navigation SPA et les tests Node.
 
+import { CATEGORIES, categoryId } from './categories.js';
+
 /**
  * Parse une cible saisie par l'utilisateur en { domain, path }.
  * Formes acceptées : "tiktok.com", "*.tiktok.com", "https://www.tiktok.com/",
@@ -68,11 +70,41 @@ export function targetToRegexFilter(target) {
   return re;
 }
 
+/** Une ligne de cibles est valide si c'est un jeton de catégorie ou une cible parsable. */
+export function isValidTargetLine(raw) {
+  return Boolean(categoryId(raw) || parseTarget(raw));
+}
+
+// Les listes de catégories sont constantes : on les parse une fois.
+const CATEGORY_TARGETS = Object.fromEntries(
+  Object.entries(CATEGORIES).map(([id, domains]) =>
+    [id, domains.map(parseTarget).filter(Boolean)])
+);
+
 /**
- * Parse les cibles d'une règle et retourne celles qui sont valides.
+ * Parse les cibles d'une règle et retourne celles qui sont valides,
+ * jetons de catégorie ("@social") expansés, doublons retirés.
  */
 export function parsedTargets(rule) {
-  return (rule.targets ?? []).map(parseTarget).filter(Boolean);
+  const out = [];
+  const seen = new Set();
+  const push = (target) => {
+    const key = targetKey(target);
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(target);
+    }
+  };
+  for (const raw of rule.targets ?? []) {
+    const cat = categoryId(raw);
+    if (cat) {
+      CATEGORY_TARGETS[cat].forEach(push);
+    } else {
+      const target = parseTarget(raw);
+      if (target) push(target);
+    }
+  }
+  return out;
 }
 
 /**

@@ -3,7 +3,7 @@
 import { SEVERITY, SUPPORT_LINKS } from '../common/constants.js';
 import { getRules, getStats, todayKey, getUsage, getSettings, getStrict } from '../common/storage.js';
 import { computeStreaks } from '../common/streaks.js';
-import { initI18n, t, tn, applyI18n, bindLangSwitcher, dateLocale } from '../common/i18n.js';
+import { initI18n, t, tn, applyI18n, bindLangSwitcher, dateLocale, ruleDisplayName } from '../common/i18n.js';
 
 function statsLine(rule, s, usedSeconds) {
   const parts = [];
@@ -59,7 +59,7 @@ async function render() {
     name.className = 'rule-name';
     const site = document.createElement('span');
     site.className = 'site-name' + (settings.discreet === true ? ' blurred' : '');
-    site.textContent = rule.name || rule.targets[0];
+    site.textContent = ruleDisplayName(rule);
     if (settings.discreet === true) {
       site.addEventListener('click', () => site.classList.toggle('revealed'));
     }
