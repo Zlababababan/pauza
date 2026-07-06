@@ -46,5 +46,5 @@ docs/            # conception
 - [x] **M2 — Horaires et quotas** (suivi du temps actif)
 - [x] **M3 — Mode strict** (verrouillage, délai 24 h, incognito guidé)
 - [x] **i18n FR/EN** dynamique (avancée depuis M5)
-- [ ] **M4 — Stats et streaks** (tableau de bord, mode discret)
+- [x] **M4 — Stats et streaks** (tableau de bord, mode discret)
 - [ ] **M5 — Finitions** (catégories prédéfinies, bouton panique, i18n FR/EN)

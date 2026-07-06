@@ -9,8 +9,8 @@ notables sont consignées pour ne pas avoir à les re-déduire du code.
 | --- | --- | --- |
 | M1 — Socle | Moteur de règles, blocage DNR, interstitiels friction/blocage, options | ✅ Livré, validé manuellement le 2026-07-05 |
 | M2 — Horaires et quotas | Plages horaires par règle, suivi du temps actif, quota/jour | ✅ Testé par Yassin le 2026-07-05, retours corrigés le 2026-07-06 |
-| M3 — Mode strict | Verrouillage des règles, délai 24 h, incognito guidé | ✅ Livré le 2026-07-06, en attente du test manuel |
-| M4 — Stats et streaks | Tableau de bord, mode discret (flou + PIN) | ⬜ |
+| M3 — Mode strict | Verrouillage des règles, délai 24 h, incognito guidé | ✅ Testé par Yassin le 2026-07-06 (correctif UI cartes inclus) |
+| M4 — Stats et streaks | Tableau de bord, mode discret (flou + PIN) | ✅ Livré le 2026-07-06, en attente du test manuel |
 | M5 — Finitions | Catégories prédéfinies, bouton panique, icônes définitives | ⬜ |
 
 i18n FR/EN : livrée en avance (2026-07-06), sortie du périmètre M5.
@@ -86,6 +86,25 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
 - Banc E2E : 39 étapes, 2 passes stables. Seuil d'inactivité rendu configurable
   (`settings.idleSeconds`) — nécessité du banc (headless = zéro input) devenue
   option produit.
+
+### 2026-07-06 — M4 livré (tableau de bord, streaks, mode discret)
+
+- M3 validé par Yassin (correctif : cartes de règles enroulables, la date sort
+  du bouton d'annulation de suppression).
+- **Streaks** : « jours propres » par sévérité (observe : 0 visite ; friction :
+  0 poursuite ; quota : non épuisé ; blocage : 0 tentative), série courante +
+  record, logique pure dans `src/common/streaks.js`.
+- **Tableau de bord** (`src/dashboard/`) : une carte par règle — streak,
+  colonnes des 14 derniers jours, tooltips, ligne de quota, totaux 7/30 j,
+  vue tableau. Couleur de données `#1f8a5c`/`#35a271` validée par le
+  validateur dataviz (chroma, bande de luminosité, contraste) sur les deux
+  surfaces — l'accent UI `#3d6b5c` « lisait gris » pour des marques de données.
+- **Mode discret** : noms floutés (clic pour révéler) dans popup et tableau de
+  bord ; PIN 4-8 chiffres sur la page d'options (SHA-256 local — rideau de
+  confidentialité assumé, pas un coffre).
+- Rétention des historiques stats/usage portée à 90 jours.
+- Liens de soutien : Yassin fournira Ko-fi + PayPal en fin de projet.
+- Banc E2E : 49 étapes.
 
 ## Monétisation — pistes retenues
 
