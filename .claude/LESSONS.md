@@ -69,6 +69,33 @@ successifs sur un script généré l'ont corrompu silencieusement — le symptô
 (nouvelle page, nouveau processus, répertoire propre). Et ne pas éditer un fichier
 généré par `sed` successifs : le réécrire entièrement dès la deuxième retouche.
 
+## 2026-07-06 — Une boucle de réconciliation a besoin d'un état de référence, pas du « précédent »
+
+**Déclencheur :** une garde anti-sabotage restaurait les règles en prenant l'oldValue de
+l'événement de changement comme vérité. Après sa propre correction, l'« ancienne » valeur
+était la valeur sabotée : la garde restaurait le sabotage, se re-corrigeait, en boucle
+infinie. Pire : les assertions du banc échantillonnaient l'oscillation et passaient une
+fois sur deux — la suite de tests semblait flaky alors que le code oscillait.
+
+**Règle :** tout mécanisme d'enforcement/réconciliation doit comparer à une référence
+canonique établie à un moment de confiance (armement, démarrage), jamais à la valeur
+précédente observée. Et quand un test devient intermittent juste après l'ajout d'une
+boucle de correction, suspecter une oscillation avant de suspecter le test : relancer
+deux fois et tracer QUI écrit.
+
+## 2026-07-06 — En environnement automatisé, les capteurs « humains » mentent
+
+**Déclencheur :** un suivi de temps actif conditionné à l'état d'inactivité système
+(60 s sans input) fonctionnait en test court et échouait en test long : en headless,
+il n'y a JAMAIS d'input, donc tout l'environnement devient « idle » 60 s après le
+lancement. Le symptôme (compteur à zéro) est apparu quand la suite est devenue plus
+lente, loin du commit responsable.
+
+**Règle :** identifier les capteurs qui présupposent un humain (idle, focus,
+visibilité, gestes) et prévoir dès le départ leur surcharge en environnement de test —
+idéalement comme un réglage produit légitime. Quand un test échoue « à partir d'une
+certaine durée », chercher les seuils temporels de l'environnement.
+
 ## 2026-07-05 — Un bug rapporté par l'utilisateur cache souvent deux causes
 
 **Déclencheur :** « le blocage ne fonctionne pas » avait deux causes indépendantes

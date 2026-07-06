@@ -21,7 +21,9 @@ Une règle = cibles + comportement :
   3. **Quota** → accès libre jusqu'à X min/jour de temps actif, puis blocage
   4. **Blocage** → aucun accès
 - **Action au blocage** (au choix par règle) : page intermédiaire OU fermeture d'onglet
-- **Horaires** : plages + jours (ex. blocage 9h–18h en semaine)
+- **Horaires** : plages + jours. Sémantique selon la sévérité — friction/blocage :
+  fenêtre d'*application* (contrainte exercée dedans, site libre en dehors) ;
+  quota : fenêtre de *disponibilité* (site fermé en dehors, quota décompté dedans)
 - **Verrou** : règle verrouillable par le mode strict
 
 **Mode strict** (orthogonal aux règles) : quand il est armé (durée choisie ou
@@ -102,6 +104,28 @@ extension ne peut pas empêcher sa désinstallation — ne pas prétendre le con
   Le suivi SPA applique la même préséance en JS. En complément, tout changement
   de `rules` révoque les allowances dont la règle a disparu, a été suspendue ou
   durcie — assouplir n'est jamais implicite, durcir prend effet immédiatement.
+
+## Mode strict (M3) — mécanique
+
+- État : `{ armed, until (null = permanent), pendingDisarmAt }` dans storage.local.
+- **Garde par miroir** : à l'armement, les règles verrouillées sont copiées dans
+  un miroir (storage.session). Tout changement de `rules` est comparé au miroir :
+  violation → restauration. Le miroir ne suit que les transitions légitimes
+  (demande de suppression ≥ 24 h, annulation, verrouillage supplémentaire).
+  Ne jamais utiliser `oldValue` de l'événement comme référence : après une
+  correction, c'est la valeur sabotée (oscillation infinie, vécu).
+- Suppressions et désarmement anticipé : demandes datées à +24 h, annulables,
+  jamais raccourcissables ; échéances appliquées par alarme et à chaque sync.
+- Soft lock assumé et dit dans l'UI : la désinstallation reste possible.
+- Prérequis guidé : autorisation en navigation privée
+  (`isAllowedIncognitoAccess` + lien vers les réglages de l'extension).
+
+## i18n
+
+Dictionnaires maison (`src/common/locales/*.js`) et non `chrome.i18n` (figé sur
+la langue du navigateur) : changement de langue à chaud via un sélecteur dans le
+popup et les options, préférence `{ lang }` en storage.local, FR par défaut et
+langue de référence (repli clé par clé).
 
 ## Portabilité future (mobile — hors scope, mais on prépare)
 

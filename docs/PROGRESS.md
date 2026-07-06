@@ -8,10 +8,12 @@ notables sont consignées pour ne pas avoir à les re-déduire du code.
 | Milestone | Contenu | État |
 | --- | --- | --- |
 | M1 — Socle | Moteur de règles, blocage DNR, interstitiels friction/blocage, options | ✅ Livré, validé manuellement le 2026-07-05 |
-| M2 — Horaires et quotas | Plages horaires par règle, suivi du temps actif, quota/jour | ✅ Livré, en attente du test manuel |
-| M3 — Mode strict | Verrouillage des règles, délai 24 h, incognito guidé | ⬜ |
+| M2 — Horaires et quotas | Plages horaires par règle, suivi du temps actif, quota/jour | ✅ Testé par Yassin le 2026-07-05, retours corrigés le 2026-07-06 |
+| M3 — Mode strict | Verrouillage des règles, délai 24 h, incognito guidé | ✅ Livré le 2026-07-06, en attente du test manuel |
 | M4 — Stats et streaks | Tableau de bord, mode discret (flou + PIN) | ⬜ |
-| M5 — Finitions | Catégories prédéfinies, bouton panique, i18n FR/EN, icônes définitives | ⬜ |
+| M5 — Finitions | Catégories prédéfinies, bouton panique, icônes définitives | ⬜ |
+
+i18n FR/EN : livrée en avance (2026-07-06), sortie du périmètre M5.
 
 Hors milestones (fil rouge) : bouton de soutien/dons discret ; préparation à une
 future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md)).
@@ -62,6 +64,28 @@ future déclinaison mobile (voir « Portabilité » dans [DESIGN.md](DESIGN.md))
   `notifications` ajoutées.
 - Banc E2E : 26/26, dont horaires dans/hors plage, épuisement de quota en
   conditions réelles et préséance blocage > allowance > friction.
+
+### 2026-07-06 — Retours M2 corrigés, i18n, M3 livré
+
+- **Retour 1 (quota + horaires)** : la plage d'une règle quota est désormais une
+  fenêtre de DISPONIBILITÉ — site fermé en dehors (nouveau mode `offhours`,
+  avec heure de réouverture affichée), quota décompté dedans. Pour
+  friction/blocage, la plage reste une fenêtre d'application. Rejoué au banc.
+- **Retour 2 (bouton « Reprendre où j'en étais »)** : détection du rebond
+  (retour arrière vers une page elle-même bloquée) et du retour inefficace →
+  repli vers un onglet vierge. Rejoué au banc.
+- **i18n FR/EN dynamique** : dictionnaires maison (`src/common/locales/`),
+  `chrome.i18n` étant figé sur la langue du navigateur. Sélecteur discret dans
+  popup et options, préférence en storage, FR par défaut et langue de référence.
+- **Soutien** : `SUPPORT_LINKS { kofi, paypal }` — en attente des URLs de Yassin.
+- **M3 — mode strict** : armement 24 h / 7 j / permanent ; règles verrouillées
+  gelées (garde par miroir en storage.session — la v1 comparait à l'oldValue de
+  l'événement et oscillait en restaurant le sabotage, leçon consignée) ;
+  suppression et désarmement anticipé soumis à un délai de 24 h, échéances
+  appliquées par alarme et au réveil ; vérification incognito guidée.
+- Banc E2E : 39 étapes, 2 passes stables. Seuil d'inactivité rendu configurable
+  (`settings.idleSeconds`) — nécessité du banc (headless = zéro input) devenue
+  option produit.
 
 ## Monétisation — pistes retenues
 
